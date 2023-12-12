@@ -2,7 +2,7 @@ name: Run tests
 
 on: 
   push:
-    branches: [master, no-precompile-in-ci]
+    branches: [master]
   pull_request:
     branches: [master]
       
@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies and Test
         run: |
           export JULIA_PKG_PRECOMPILE_AUTO=0
-          julia --threads 4 -e 'using Pkg                                                   
+          julia -e 'using Pkg                                                   
                     Pkg.activate(".")
                     Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")
                     Pkg.test()'
