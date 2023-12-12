@@ -2,7 +2,7 @@ name: Run tests
 
 on: 
   push:
-    branches: [master]
+    branches: [master, no-precompile-in-ci]
   pull_request:
     branches: [master]
       
