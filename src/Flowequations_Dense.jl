@@ -123,6 +123,10 @@ function getXBubble!(
                          γ = Workspace.State.γ,
                          Γ = Workspace.State.Γ,
                          γDeriv = Workspace.Deriv.γ,
+                         T = Workspace.Par.NumericalParams.T,
+                         lenIntw = Workspace.Par.NumericalParams.lenIntw,
+                         np_vec =  Workspace.Par.NumericalParams.np_vec,
+                         N =  Workspace.Par.NumericalParams.N,
                          Lam=Lam,
                          isrange=1:N,
                          itrange=1:N,
@@ -135,13 +139,10 @@ end
 # - Workspace.State.γ # ok
 # - Workspace.State.Γ # ok
 # - Workspace.Deriv.γ # ok
-# - Workspace.Par.NumericalParams.T
-# - Workspace.Par.NumericalParams.lenIntw
-# - Workspace.Par.NumericalParams.np_vec
-# - Workspace.Buffer.Props
-# - Workspace.Buffer.Vertex
-# - Workspace.Par.NumericalParams.N
-# - Workspace.Par.NumericalParams.np_vec
+# - Workspace.Par.NumericalParams.T # ok
+# - Workspace.Par.NumericalParams.lenIntw # ok
+# - Workspace.Par.NumericalParams.np_vec # ok
+# - Workspace.Par.NumericalParams.N # ok
 # - Workspace.Par.System.siteSum
 # - Workspace.Par.System.Npairs
 # - Workspace.Par.System.Nsum
@@ -149,18 +150,24 @@ end
 # - Workspace.Par.System.Pairtypes
 # - Workspace.Par.System.OnsitePairs
 # - Workspace.Par.System.Nunique
+# - Workspace.Buffer.Props
+# - Workspace.Buffer.Vertex
 # - Workspace.X
 """writing to X and XTilde in Workspace, computes bubble diagrams within a range of frequencies given by isrange, itrange and iurange"""
 function getXBubblePartition!(;Workspace::PMFRGWorkspace,
                               γ,
                               Γ,
                               γDeriv,
+                              T,
+                              lenIntw,
+                              np_vec,
+                              N,
                               Lam,
                               isrange,
                               itrange,
                               iurange)
     Par = Workspace.Par
-    (; T, N, lenIntw, np_vec) = Par.NumericalParams
+    #(; T, N, lenIntw, np_vec) = Par.NumericalParams
     PropsBuffers = Workspace.Buffer.Props
     VertexBuffers = Workspace.Buffer.Vertex
     iG(x, nw) = iG_(γ, x, Lam, nw, T)
@@ -188,8 +195,8 @@ function getXBubblePartition!(;Workspace::PMFRGWorkspace,
                             continue
                         end
                         addXTilde!(;Γ=Γ,
-                                   N=Workspace.Par.NumericalParams.N,
-                                   np_vec=Workspace.Par.NumericalParams.np_vec,
+                                   N=N,
+                                   np_vec=np_vec,
                                    Npairs=Workspace.Par.System.Npairs,
                                    invpairs=Workspace.Par.System.invpairs,
                                    PairTypes=Workspace.Par.System.PairTypes,
@@ -204,8 +211,8 @@ function getXBubblePartition!(;Workspace::PMFRGWorkspace,
                                    sprop=sprop) # add to XTilde-type bubble functions
                         if (!Par.Options.usesymmetry || nu <= nt)
                             addX!(;Γ=Γ,
-                                  N=Workspace.Par.NumericalParams.N,
-                                  np_vec=Workspace.Par.NumericalParams.np_vec,
+                                  N=N,
+                                  np_vec=np_vec,
                                   Npairs=Workspace.Par.System.Npairs,
                                   Nsum=Workspace.Par.System.Nsum,
                                   siteSum=Workspace.Par.System.siteSum,
