@@ -119,7 +119,6 @@ function getXBubble!(
     Par = Workspace.Par
     (; N) = Par.NumericalParams
     getXBubblePartition!(;
-                         Workspace=Workspace,
                          γ = Workspace.State.γ,
                          Γ = Workspace.State.Γ,
                          γDeriv = Workspace.Deriv.γ,
@@ -164,7 +163,7 @@ end
 # - Workspace.Buffer # ok
 # - Workspace.X # ok
 """writing to X and XTilde in Workspace, computes bubble diagrams within a range of frequencies given by isrange, itrange and iurange"""
-function getXBubblePartition!(;Workspace::PMFRGWorkspace,
+function getXBubblePartition!(;
                               γ,
                               Γ,
                               γDeriv,
