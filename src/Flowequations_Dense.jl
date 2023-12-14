@@ -174,6 +174,8 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                         end
                         addXTilde!(;Workspace=Workspace,
                                    Γ=Workspace.State.Γ,
+                                   N=Workspace.Par.NumericalParams.N,
+                                   np_vec=Workspace.Par.NumericalParams.np_vec,
                                    is=is,
                                    it=it,
                                    iu=iu,
@@ -358,8 +360,8 @@ end
 # FIXME: remove reasoning
 # This function needs:
 # - Workspace.State.Γ # ok
-# - Workspace.Par.NumericalParams.N
-# - Workspace.Par.NumericalParams.np_vec
+# - Workspace.Par.NumericalParams.N # ok
+# - Workspace.Par.NumericalParams.np_vec # ok
 # - Workspace.Par.System.Npairs
 # - Workspace.Par.System.invpairs
 # - Workspace.Par.System.Pairtypes
@@ -376,6 +378,8 @@ end
 function addXTilde!(;
     Workspace::PMFRGWorkspace,
     Γ,
+    N,
+    np_vec,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -384,7 +388,6 @@ function addXTilde!(;
 )
 
     (; X, Par) = Workspace
-    (; N, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
     @inline Va_(Rij, s, t, u) = V_(Γ.a, Rij, s, t, u, invpairs[Rij], N)
@@ -448,8 +451,8 @@ end
 # FIXME remove reasoning
 # This function needs:
 # - Workspace.State.Γ # ok
-# - Workspace.Par.NumericalParams.N
-# - Workspace.Par.NumericalParams.np_vec
+# - Workspace.Par.NumericalParams.N # ok
+# - Workspace.Par.NumericalParams.np_vec # ok
 # - Workspace.Par.System.Npairs
 # - Workspace.Par.System.invpairs
 # - Workspace.Par.System.OnSitePairs
@@ -466,6 +469,8 @@ end
 @inline function addXTilde!(;
     Workspace::PMFRGWorkspace,
     Γ,
+    N,
+    np_vec,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -474,7 +479,6 @@ end
 )
 
     (; X, Par) = Workspace
-    (; N, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, OnsitePairs) = Par.System
 
     @inline Va_(Rij, s, t, u) = V_(Γ.a, Rij, s, t, u, invpairs[Rij], N)
