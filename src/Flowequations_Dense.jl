@@ -172,7 +172,12 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                         if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
                             continue
                         end
-                        addXTilde!(Workspace, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
+                        addXTilde!(;Workspace=Workspace,
+                                   is=is,
+                                   it=it,
+                                   iu=iu,
+                                   nw=nw,
+                                   sprop=sprop) # add to XTilde-type bubble functions
                         if (!Par.Options.usesymmetry || nu <= nt)
                             addX!(;Γ=Workspace.State.Γ,
                                   N=Workspace.Par.NumericalParams.N,
@@ -367,7 +372,7 @@ end
 # - iu
 # - nwpr
 # - Props
-function addXTilde!(
+function addXTilde!(;
     Workspace::PMFRGWorkspace,
     is::Integer,
     it::Integer,
@@ -456,7 +461,7 @@ end
 # - nwpr
 # - Props
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
-@inline function addXTilde!(
+@inline function addXTilde!(;
     Workspace::PMFRGWorkspace,
     is::Integer,
     it::Integer,
