@@ -175,6 +175,7 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                         addXTilde!(Workspace, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
                         if (!Par.Options.usesymmetry || nu <= nt)
                             addX!(;Workspace=Workspace,
+                                  Γ=Workspace.State.Γ,
                                   is=is,
                                   it=it,
                                   iu=iu,
@@ -229,6 +230,7 @@ adds part of X functions in Matsubara sum at nwpr containing the site summation 
 """
 function addX!(;
     Workspace::PMFRGWorkspace,
+    Γ,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -236,7 +238,7 @@ function addX!(;
     Props,
     Buffer,
 )
-    (; State, X, Par) = Workspace
+    (; X, Par) = Workspace
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, Nsum, siteSum, invpairs) = Par.System
@@ -246,16 +248,16 @@ function addX!(;
     nu = np_vec[iu]
     wpw1, wpw2, wmw3, wmw4 = mixedFrequencies(ns, nt, nu, nwpr)
 
-    bufferV_!(Va12, State.Γ.a, ns, wpw1, wpw2, invpairs, N)
-    bufferV_!(Vb12, State.Γ.b, ns, wpw1, wpw2, invpairs, N)
-    bufferV_!(Vc12, State.Γ.c, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Va12, Γ.a, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Vb12, Γ.b, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Vc12, Γ.c, ns, wpw1, wpw2, invpairs, N)
 
-    bufferV_!(Va34, State.Γ.a, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vb34, State.Γ.b, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vc34, State.Γ.c, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Va34, Γ.a, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vb34, Γ.b, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vc34, Γ.c, ns, wmw3, wmw4, invpairs, N)
 
-    bufferV_!(Vc21, State.Γ.c, ns, wpw2, wpw1, invpairs, N)
-    bufferV_!(Vc43, State.Γ.c, ns, wmw4, wmw3, invpairs, N)
+    bufferV_!(Vc21, Γ.c, ns, wpw2, wpw1, invpairs, N)
+    bufferV_!(Vc43, Γ.c, ns, wmw4, wmw3, invpairs, N)
     # get fields of siteSum struct as Matrices for better use of LoopVectorization
     S_ki = siteSum.ki
     S_kj = siteSum.kj
@@ -310,6 +312,7 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 @inline function addX!(;
     Workspace::PMFRGWorkspace,
+    Γ,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -317,7 +320,7 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
     Props::SingleElementMatrix,
     Buffer,
 )
-    (; State, X, Par) = Workspace
+    (; X, Par) = Workspace
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, Nsum, siteSum, invpairs) = Par.System
@@ -327,16 +330,16 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
     nu = np_vec[iu]
     wpw1, wpw2, wmw3, wmw4 = mixedFrequencies(ns, nt, nu, nwpr)
 
-    bufferV_!(Va12, State.Γ.a, ns, wpw1, wpw2, invpairs, N)
-    bufferV_!(Vb12, State.Γ.b, ns, wpw1, wpw2, invpairs, N)
-    bufferV_!(Vc12, State.Γ.c, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Va12, Γ.a, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Vb12, Γ.b, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Vc12, Γ.c, ns, wpw1, wpw2, invpairs, N)
 
-    bufferV_!(Va34, State.Γ.a, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vb34, State.Γ.b, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vc34, State.Γ.c, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Va34, Γ.a, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vb34, Γ.b, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vc34, Γ.c, ns, wmw3, wmw4, invpairs, N)
 
-    bufferV_!(Vc21, State.Γ.c, ns, wpw2, wpw1, invpairs, N)
-    bufferV_!(Vc43, State.Γ.c, ns, wmw4, wmw3, invpairs, N)
+    bufferV_!(Vc21, Γ.c, ns, wpw2, wpw1, invpairs, N)
+    bufferV_!(Vc43, Γ.c, ns, wmw4, wmw3, invpairs, N)
     # get fields of siteSum struct as Matrices for better use of LoopVectorization
     S_ki = siteSum.ki
     S_kj = siteSum.kj
