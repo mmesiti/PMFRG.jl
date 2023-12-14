@@ -127,6 +127,13 @@ function getXBubble!(
                          lenIntw = Workspace.Par.NumericalParams.lenIntw,
                          np_vec =  Workspace.Par.NumericalParams.np_vec,
                          N =  Workspace.Par.NumericalParams.N,
+                         siteSum= Workspace.Par.System.siteSum,
+                         Npairs= Workspace.Par.System.Npairs,
+                         Nsum= Workspace.Par.System.Nsum,
+                         invpairs= Workspace.Par.System.invpairs,
+                         PairTypes= Workspace.Par.System.PairTypes,
+                         OnsitePairs= Workspace.Par.System.OnsitePairs,
+                         NUnique= Workspace.Par.System.NUnique,
                          Lam=Lam,
                          isrange=1:N,
                          itrange=1:N,
@@ -143,13 +150,13 @@ end
 # - Workspace.Par.NumericalParams.lenIntw # ok
 # - Workspace.Par.NumericalParams.np_vec # ok
 # - Workspace.Par.NumericalParams.N # ok
-# - Workspace.Par.System.siteSum
-# - Workspace.Par.System.Npairs
-# - Workspace.Par.System.Nsum
-# - Workspace.Par.System.invpairs
-# - Workspace.Par.System.Pairtypes
-# - Workspace.Par.System.OnsitePairs
-# - Workspace.Par.System.Nunique
+# - Workspace.Par.System.siteSum # ok
+# - Workspace.Par.System.Npairs # ok
+# - Workspace.Par.System.Nsum # ok
+# - Workspace.Par.System.invpairs # ok
+# - Workspace.Par.System.PairTypes # ok
+# - Workspace.Par.System.OnsitePairs # ok
+# - Workspace.Par.System.NUnique # ok
 # - Workspace.Buffer.Props
 # - Workspace.Buffer.Vertex
 # - Workspace.X
@@ -162,19 +169,25 @@ function getXBubblePartition!(;Workspace::PMFRGWorkspace,
                               lenIntw,
                               np_vec,
                               N,
+                              siteSum,
+                              Npairs,
+                              Nsum,
+                              invpairs,
+                              PairTypes,
+                              OnsitePairs,
+                              NUnique,
                               Lam,
                               isrange,
                               itrange,
                               iurange)
     Par = Workspace.Par
-    #(; T, N, lenIntw, np_vec) = Par.NumericalParams
     PropsBuffers = Workspace.Buffer.Props
     VertexBuffers = Workspace.Buffer.Vertex
     iG(x, nw) = iG_(γ, x, Lam, nw, T)
     iSKat(x, nw) = iSKat_(γ, γDeriv, x, Lam, nw, T)
 
     function getKataninProp!(BubbleProp, nw1, nw2)
-        for i = 1:Par.System.NUnique, j = 1:Par.System.NUnique
+        for i = 1:NUnique, j = 1:NUnique
             BubbleProp[i, j] = iSKat(i, nw1) * iG(j, nw2) * T
         end
         return SMatrix(BubbleProp)
@@ -197,10 +210,10 @@ function getXBubblePartition!(;Workspace::PMFRGWorkspace,
                         addXTilde!(;Γ=Γ,
                                    N=N,
                                    np_vec=np_vec,
-                                   Npairs=Workspace.Par.System.Npairs,
-                                   invpairs=Workspace.Par.System.invpairs,
-                                   PairTypes=Workspace.Par.System.PairTypes,
-                                   OnsitePairs=Workspace.Par.System.OnsitePairs,
+                                   Npairs=Npairs,
+                                   invpairs=invpairs,
+                                   PairTypes=PairTypes,
+                                   OnsitePairs=OnsitePairs,
                                    XTa=Workspace.X.Ta,
                                    XTb=Workspace.X.Tb,
                                    XTc=Workspace.X.Tc,
@@ -213,10 +226,10 @@ function getXBubblePartition!(;Workspace::PMFRGWorkspace,
                             addX!(;Γ=Γ,
                                   N=N,
                                   np_vec=np_vec,
-                                  Npairs=Workspace.Par.System.Npairs,
-                                  Nsum=Workspace.Par.System.Nsum,
-                                  siteSum=Workspace.Par.System.siteSum,
-                                  invpairs=Workspace.Par.System.invpairs,
+                                  Npairs=Npairs,
+                                  Nsum=Nsum,
+                                  siteSum=siteSum,
+                                  invpairs=invpairs,
                                   Xa=Workspace.X.a,
                                   Xb=Workspace.X.b,
                                   Xc=Workspace.X.c,
