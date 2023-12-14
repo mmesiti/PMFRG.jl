@@ -174,8 +174,7 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                         end
                         addXTilde!(Workspace, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
                         if (!Par.Options.usesymmetry || nu <= nt)
-                            addX!(;Workspace=Workspace,
-                                  Γ=Workspace.State.Γ,
+                            addX!(;Γ=Workspace.State.Γ,
                                   N=Workspace.Par.NumericalParams.N,
                                   np_vec=Workspace.Par.NumericalParams.np_vec,
                                   Npairs=Workspace.Par.System.Npairs,
@@ -216,30 +215,10 @@ end
     return wpw1, wpw2, wmw3, wmw4
 end
 
-# FIXME: remove reasoning
-# This function needs:
-# - Workspace.State.Γ #ok
-# - Workspace.Par.NumericalParams.N # ok
-# - Workspace.Par.NumericalParams.np_vec # ok
-# - Workspace.Par.System.Npairs # ok
-# - Workspace.Par.System.Nsum # ok
-# - Workspace.Par.System.siteSum # ok
-# - Workspace.Par.System.invPairs # ok
-# - Workspace.X.a
-# - Workspace.X.b
-# - Workspace.X.c
-# - is
-# - it
-# - iu
-# - nwpr
-# - Props
-# - Buffer
 """
 adds part of X functions in Matsubara sum at nwpr containing the site summation for a set of s t and u frequencies. This is the most numerically demanding part!
 """
-function addX!(;
-    Workspace::PMFRGWorkspace,
-    Γ,
+function addX!(;Γ,
     N,
     np_vec,
     Npairs,
@@ -306,28 +285,8 @@ end
 
 const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 
-# FIXME: remove reasoning
-# This function needs:
-# - Workspace.State.Γ # ok
-# - Workspace.Par.NumericalParams.N # ok
-# - Workspace.Par.NumericalParams.Np_vec # ok
-# - Workspace.Par.System.Npairs
-# - Workspace.Par.System.Nsum
-# - Workspace.Par.System.siteSum
-# - Workspace.Par.System.invpairs
-# - Workspace.X.a
-# - Workspace.X.b
-# - Workspace.X.c
-# - is
-# - it
-# - iu
-# - nwpr
-# - Props
-# - Buffer
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
-@inline function addX!(;
-    Workspace::PMFRGWorkspace,
-    Γ,
+@inline function addX!(; Γ,
     N,
     np_vec,
     Npairs,
