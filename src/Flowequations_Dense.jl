@@ -118,21 +118,25 @@ function getXBubble!(
 )
     Par = Workspace.Par
     (; N) = Par.NumericalParams
-    getXBubblePartition!(Workspace, Lam, 1:N, 1:N, 1:N)
+    getXBubblePartition!(;
+                         Workspace=Workspace,
+                         Lam=Lam,
+                         isrange=1:N,
+                         itrange=1:N,
+                         iurange=1:N)
 end
 
 # FIXME: remove reasoning
 # What does getXBubblePartition really need?
+# - Lam
+# - Workspace.State.γ
+# - Workspace.State.Γ
+# - Workspace.Deriv.γ
 # - Workspace.Par.NumericalParams.T
 # - Workspace.Par.NumericalParams.lenIntw
 # - Workspace.Par.NumericalParams.np_vec
 # - Workspace.Buffer.Props
 # - Workspace.Buffer.Vertex
-# - Workspace.State.γ
-# - Lam
-# - Workspace.Deriv.γ
-# - Workspace.X
-# - Workspace.State.Γ
 # - Workspace.Par.NumericalParams.N
 # - Workspace.Par.NumericalParams.np_vec
 # - Workspace.Par.System.siteSum
@@ -142,8 +146,9 @@ end
 # - Workspace.Par.System.Pairtypes
 # - Workspace.Par.System.OnsitePairs
 # - Workspace.Par.System.Nunique
+# - Workspace.X
 """writing to X and XTilde in Workspace, computes bubble diagrams within a range of frequencies given by isrange, itrange and iurange"""
-function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, iurange)
+function getXBubblePartition!(;Workspace::PMFRGWorkspace, Lam, isrange, itrange, iurange)
     Par = Workspace.Par
     (; T, N, lenIntw, np_vec) = Par.NumericalParams
     PropsBuffers = Workspace.Buffer.Props
@@ -362,24 +367,6 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
     return
 end
 
-
-# FIXME: remove reasoning
-# This function needs:
-# - Workspace.State.Γ # ok
-# - Workspace.Par.NumericalParams.N # ok
-# - Workspace.Par.NumericalParams.np_vec # ok
-# - Workspace.Par.System.Npairs # ok
-# - Workspace.Par.System.invpairs # ok
-# - Workspace.Par.System.Pairtypes # ok
-# - Workspace.Par.System.OnsitePairs # ok
-# - Workspace.X.Ta # ok
-# - Workspace.X.Tb # ok
-# - Workspace.X.Tc # ok
-# - is
-# - it
-# - iu
-# - nwpr
-# - Props
 function addXTilde!(;
     Γ,
     N,
@@ -458,22 +445,6 @@ function addXTilde!(;
     end
 end
 
-# FIXME remove reasoning
-# This function needs:
-# - Workspace.State.Γ # ok
-# - Workspace.Par.NumericalParams.N # ok
-# - Workspace.Par.NumericalParams.np_vec # ok
-# - Workspace.Par.System.Npairs      # ok
-# - Workspace.Par.System.invpairs# ok
-# - Workspace.Par.System.OnSitePairs# ok
-# - Workspace.X.Ta # ok
-# - Workspace.X.Tb # ok
-# - Workspace.X.Tc # ok
-# - is
-# - it
-# - iu
-# - nwpr
-# - Props
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 @inline function addXTilde!(;
     Γ,
