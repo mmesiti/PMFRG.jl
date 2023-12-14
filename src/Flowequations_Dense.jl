@@ -182,6 +182,9 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                                   Nsum=Workspace.Par.System.Nsum,
                                   siteSum=Workspace.Par.System.siteSum,
                                   invpairs=Workspace.Par.System.invpairs,
+                                  Xa=Workspace.X.a,
+                                  Xb=Workspace.X.b,
+                                  Xc=Workspace.X.c,
                                   is=is,
                                   it=it,
                                   iu=iu,
@@ -243,6 +246,9 @@ function addX!(;
     Nsum,
     siteSum,
     invpairs,
+    Xa,
+    Xb,
+    Xc,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -250,7 +256,6 @@ function addX!(;
     Props,
     Buffer,
 )
-    (; X) = Workspace
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
 
     ns = np_vec[is]
@@ -292,9 +297,9 @@ function addX!(;
 
             Xc_sum += (+Vc12[ki] * Vc34[kj] + Vc21[ki] * Vc43[kj]) * Ptm
         end
-        X.a[Rij, is, it, iu] += Xa_sum
-        X.b[Rij, is, it, iu] += Xb_sum
-        X.c[Rij, is, it, iu] += Xc_sum
+        Xa[Rij, is, it, iu] += Xa_sum
+        Xb[Rij, is, it, iu] += Xb_sum
+        Xc[Rij, is, it, iu] += Xc_sum
     end
     return
 end
@@ -329,6 +334,9 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
     Nsum,
     siteSum,
     invpairs,
+    Xa,
+    Xb,
+    Xc,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -336,7 +344,6 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
     Props::SingleElementMatrix,
     Buffer,
 )
-    (; X) = Workspace
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
 
     ns = np_vec[is]
@@ -375,9 +382,9 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 
             Xc_sum += (+Vc12[ki] * Vc34[kj] + Vc21[ki] * Vc43[kj]) * m
         end
-        X.a[Rij, is, it, iu] += Xa_sum * Prop
-        X.b[Rij, is, it, iu] += Xb_sum * Prop
-        X.c[Rij, is, it, iu] += Xc_sum * Prop
+        Xa[Rij, is, it, iu] += Xa_sum * Prop
+        Xb[Rij, is, it, iu] += Xb_sum * Prop
+        Xc[Rij, is, it, iu] += Xc_sum * Prop
     end
     return
 end
