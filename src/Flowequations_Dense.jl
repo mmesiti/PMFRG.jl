@@ -176,6 +176,10 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                                    Γ=Workspace.State.Γ,
                                    N=Workspace.Par.NumericalParams.N,
                                    np_vec=Workspace.Par.NumericalParams.np_vec,
+                                   Npairs=Workspace.Par.System.Npairs,
+                                   invpairs=Workspace.Par.System.invpairs,
+                                   PairTypes=Workspace.Par.System.PairTypes,
+                                   OnsitePairs=Workspace.Par.System.OnsitePairs,
                                    is=is,
                                    it=it,
                                    iu=iu,
@@ -362,10 +366,10 @@ end
 # - Workspace.State.Γ # ok
 # - Workspace.Par.NumericalParams.N # ok
 # - Workspace.Par.NumericalParams.np_vec # ok
-# - Workspace.Par.System.Npairs
-# - Workspace.Par.System.invpairs
-# - Workspace.Par.System.Pairtypes
-# - Workspace.Par.System.OnsitePairs
+# - Workspace.Par.System.Npairs # ok
+# - Workspace.Par.System.invpairs # ok
+# - Workspace.Par.System.Pairtypes # ok
+# - Workspace.Par.System.OnsitePairs # ok
 # - Workspace.X.Ta
 # - Workspace.X.Tb
 # - Workspace.X.Tc
@@ -380,6 +384,10 @@ function addXTilde!(;
     Γ,
     N,
     np_vec,
+    Npairs,
+    invpairs,
+    PairTypes,
+    OnsitePairs,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -387,8 +395,8 @@ function addXTilde!(;
     Props,
 )
 
-    (; X, Par) = Workspace
-    (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
+    (; X) = Workspace
+    #(; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
     @inline Va_(Rij, s, t, u) = V_(Γ.a, Rij, s, t, u, invpairs[Rij], N)
     @inline Vb_(Rij, s, t, u) = V_(Γ.b, Rij, s, t, u, invpairs[Rij], N)
@@ -453,9 +461,9 @@ end
 # - Workspace.State.Γ # ok
 # - Workspace.Par.NumericalParams.N # ok
 # - Workspace.Par.NumericalParams.np_vec # ok
-# - Workspace.Par.System.Npairs
-# - Workspace.Par.System.invpairs
-# - Workspace.Par.System.OnSitePairs
+# - Workspace.Par.System.Npairs      # ok
+# - Workspace.Par.System.invpairs# ok
+# - Workspace.Par.System.OnSitePairs# ok
 # - Workspace.X.Ta
 # - Workspace.X.Tb
 # - Workspace.X.Tc
@@ -471,6 +479,10 @@ end
     Γ,
     N,
     np_vec,
+    Npairs,
+    invpairs,
+    PairTypes,
+    OnsitePairs,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -478,8 +490,7 @@ end
     Props::SingleElementMatrix,
 )
 
-    (; X, Par) = Workspace
-    (; Npairs, invpairs, OnsitePairs) = Par.System
+    (; X) = Workspace
 
     @inline Va_(Rij, s, t, u) = V_(Γ.a, Rij, s, t, u, invpairs[Rij], N)
     @inline Vb_(Rij, s, t, u) = V_(Γ.b, Rij, s, t, u, invpairs[Rij], N)
