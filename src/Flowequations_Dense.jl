@@ -173,6 +173,7 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                             continue
                         end
                         addXTilde!(;Workspace=Workspace,
+                                   Γ=Workspace.State.Γ,
                                    is=is,
                                    it=it,
                                    iu=iu,
@@ -356,7 +357,7 @@ end
 
 # FIXME: remove reasoning
 # This function needs:
-# - Workspace.State.Γ
+# - Workspace.State.Γ # ok
 # - Workspace.Par.NumericalParams.N
 # - Workspace.Par.NumericalParams.np_vec
 # - Workspace.Par.System.Npairs
@@ -374,6 +375,7 @@ end
 # - Props
 function addXTilde!(;
     Workspace::PMFRGWorkspace,
+    Γ,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -381,13 +383,13 @@ function addXTilde!(;
     Props,
 )
 
-    (; State, X, Par) = Workspace
+    (; X, Par) = Workspace
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
-    @inline Va_(Rij, s, t, u) = V_(State.Γ.a, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vb_(Rij, s, t, u) = V_(State.Γ.b, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vc_(Rij, s, t, u) = V_(State.Γ.c, Rij, s, t, u, invpairs[Rij], N)
+    @inline Va_(Rij, s, t, u) = V_(Γ.a, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vb_(Rij, s, t, u) = V_(Γ.b, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vc_(Rij, s, t, u) = V_(Γ.c, Rij, s, t, u, invpairs[Rij], N)
     ns = np_vec[is]
     nt = np_vec[it]
     nu = np_vec[iu]
@@ -445,7 +447,7 @@ end
 
 # FIXME remove reasoning
 # This function needs:
-# - Workspace.State.Γ
+# - Workspace.State.Γ # ok
 # - Workspace.Par.NumericalParams.N
 # - Workspace.Par.NumericalParams.np_vec
 # - Workspace.Par.System.Npairs
@@ -463,6 +465,7 @@ end
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 @inline function addXTilde!(;
     Workspace::PMFRGWorkspace,
+    Γ,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -470,13 +473,13 @@ end
     Props::SingleElementMatrix,
 )
 
-    (; State, X, Par) = Workspace
+    (; X, Par) = Workspace
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, OnsitePairs) = Par.System
 
-    @inline Va_(Rij, s, t, u) = V_(State.Γ.a, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vb_(Rij, s, t, u) = V_(State.Γ.b, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vc_(Rij, s, t, u) = V_(State.Γ.c, Rij, s, t, u, invpairs[Rij], N)
+    @inline Va_(Rij, s, t, u) = V_(Γ.a, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vb_(Rij, s, t, u) = V_(Γ.b, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vc_(Rij, s, t, u) = V_(Γ.c, Rij, s, t, u, invpairs[Rij], N)
     ns = np_vec[is]
     nt = np_vec[it]
     nu = np_vec[iu]
