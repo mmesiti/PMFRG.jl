@@ -180,6 +180,9 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                                    invpairs=Workspace.Par.System.invpairs,
                                    PairTypes=Workspace.Par.System.PairTypes,
                                    OnsitePairs=Workspace.Par.System.OnsitePairs,
+                                   XTa=Workspace.X.Ta,
+                                   XTb=Workspace.X.Tb,
+                                   XTc=Workspace.X.Tc,
                                    is=is,
                                    it=it,
                                    iu=iu,
@@ -370,10 +373,9 @@ end
 # - Workspace.Par.System.invpairs # ok
 # - Workspace.Par.System.Pairtypes # ok
 # - Workspace.Par.System.OnsitePairs # ok
-# - Workspace.X.Ta
-# - Workspace.X.Tb
-# - Workspace.X.Tc
-# - Workspace.X.Td
+# - Workspace.X.Ta # ok
+# - Workspace.X.Tb # ok
+# - Workspace.X.Tc # ok
 # - is
 # - it
 # - iu
@@ -388,6 +390,9 @@ function addXTilde!(;
     invpairs,
     PairTypes,
     OnsitePairs,
+    XTa,
+    XTb,
+    XTc,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -395,7 +400,6 @@ function addXTilde!(;
     Props,
 )
 
-    (; X) = Workspace
     #(; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
     @inline Va_(Rij, s, t, u) = V_(Γ.a, Rij, s, t, u, invpairs[Rij], N)
@@ -429,12 +433,12 @@ function addXTilde!(;
         Vc34 = Vc_(Rji, wmw3, ns, wmw4)
         Vc43 = Vc_(Rij, wmw4, ns, wmw3)
 
-        X.Ta[Rij, is, it, iu] += (
+        XTa[Rij, is, it, iu] += (
             (+Va21 * Va43 + 2 * Vc21 * Vc43) * Props[xi, xj] +
             (Va12 * Va34 + 2 * Vc12 * Vc34) * Props[xj, xi]
         )
 
-        X.Tb[Rij, is, it, iu] += (
+        XTb[Rij, is, it, iu] += (
             (+Va21 * Vc43 + Vc21 * Vc43 + Vc21 * Va43) * Props[xi, xj] +
             (Va12 * Vc34 + Vc12 * Vc34 + Vc12 * Va34) * Props[xj, xi]
         )
@@ -449,7 +453,7 @@ function addXTilde!(;
         Vc43 = Vc_(Rij, wmw4, wmw3, ns)
 
 
-        X.Tc[Rij, is, it, iu] += (
+        XTc[Rij, is, it, iu] += (
             (+Vb21 * Vb43 + Vc21 * Vc43) * Props[xi, xj] +
             (Vb12 * Vb34 + Vc12 * Vc34) * Props[xj, xi]
         )
@@ -464,10 +468,9 @@ end
 # - Workspace.Par.System.Npairs      # ok
 # - Workspace.Par.System.invpairs# ok
 # - Workspace.Par.System.OnSitePairs# ok
-# - Workspace.X.Ta
-# - Workspace.X.Tb
-# - Workspace.X.Tc
-# - Workspace.X.Td
+# - Workspace.X.Ta # ok
+# - Workspace.X.Tb # ok
+# - Workspace.X.Tc # ok
 # - is
 # - it
 # - iu
@@ -483,14 +486,15 @@ end
     invpairs,
     PairTypes,
     OnsitePairs,
+    XTa,
+    XTb,
+    XTc,
     is::Integer,
     it::Integer,
     iu::Integer,
     nwpr::Integer,
     Props::SingleElementMatrix,
 )
-
-    (; X) = Workspace
 
     @inline Va_(Rij, s, t, u) = V_(Γ.a, Rij, s, t, u, invpairs[Rij], N)
     @inline Vb_(Rij, s, t, u) = V_(Γ.b, Rij, s, t, u, invpairs[Rij], N)
@@ -522,10 +526,10 @@ end
         Vc34 = Vc_(Rji, wmw3, ns, wmw4)
         Vc43 = Vc_(Rij, wmw4, ns, wmw3)
 
-        X.Ta[Rij, is, it, iu] +=
+        XTa[Rij, is, it, iu] +=
             (+Va21 * Va43 + 2 * Vc21 * Vc43 + Va12 * Va34 + 2 * Vc12 * Vc34) * Prop
 
-        X.Tb[Rij, is, it, iu] +=
+        XTb[Rij, is, it, iu] +=
             (
                 +Va21 * Vc43 +
                 Vc21 * Vc43 +
@@ -545,7 +549,7 @@ end
         Vc43 = Vc_(Rij, wmw4, wmw3, ns)
 
 
-        X.Tc[Rij, is, it, iu] +=
+        XTc[Rij, is, it, iu] +=
             (+Vb21 * Vb43 + Vc21 * Vc43 + Vb12 * Vb34 + Vc12 * Vc34) * Prop
     end
 end
