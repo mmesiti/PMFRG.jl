@@ -174,7 +174,13 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                         end
                         addXTilde!(Workspace, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
                         if (!Par.Options.usesymmetry || nu <= nt)
-                            addX!(Workspace, is, it, iu, nw, sprop, Buffer)# add to X-type bubble functions
+                            addX!(Workspace=Workspace,
+                                  is=is,
+                                  it=it,
+                                  iu=iu,
+                                  nw=nw,
+                                  sprop=sprop,
+                                  Buffer=Buffer)# add to X-type bubble functions
                         end
                     end
                 end
@@ -221,7 +227,7 @@ end
 """
 adds part of X functions in Matsubara sum at nwpr containing the site summation for a set of s t and u frequencies. This is the most numerically demanding part!
 """
-function addX!(
+function addX!(;
     Workspace::PMFRGWorkspace,
     is::Integer,
     it::Integer,
@@ -302,7 +308,7 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 # - Props
 # - Buffer
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
-@inline function addX!(
+@inline function addX!(;
     Workspace::PMFRGWorkspace,
     is::Integer,
     it::Integer,
