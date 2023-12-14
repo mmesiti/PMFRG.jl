@@ -174,7 +174,7 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                         end
                         addXTilde!(Workspace, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
                         if (!Par.Options.usesymmetry || nu <= nt)
-                            addX!(Workspace=Workspace,
+                            addX!(;Workspace=Workspace,
                                   is=is,
                                   it=it,
                                   iu=iu,
