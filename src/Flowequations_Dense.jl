@@ -122,6 +122,7 @@ function getXBubble!(
                          Workspace=Workspace,
                          γ = Workspace.State.γ,
                          Γ = Workspace.State.Γ,
+                         γDeriv = Workspace.Deriv.γ,
                          Lam=Lam,
                          isrange=1:N,
                          itrange=1:N,
@@ -133,7 +134,7 @@ end
 # - Lam
 # - Workspace.State.γ # ok
 # - Workspace.State.Γ # ok
-# - Workspace.Deriv.γ
+# - Workspace.Deriv.γ # ok
 # - Workspace.Par.NumericalParams.T
 # - Workspace.Par.NumericalParams.lenIntw
 # - Workspace.Par.NumericalParams.np_vec
@@ -153,6 +154,7 @@ end
 function getXBubblePartition!(;Workspace::PMFRGWorkspace,
                               γ,
                               Γ,
+                              γDeriv,
                               Lam,
                               isrange,
                               itrange,
@@ -162,7 +164,7 @@ function getXBubblePartition!(;Workspace::PMFRGWorkspace,
     PropsBuffers = Workspace.Buffer.Props
     VertexBuffers = Workspace.Buffer.Vertex
     iG(x, nw) = iG_(γ, x, Lam, nw, T)
-    iSKat(x, nw) = iSKat_(γ, Workspace.Deriv.γ, x, Lam, nw, T)
+    iSKat(x, nw) = iSKat_(γ, γDeriv, x, Lam, nw, T)
 
     function getKataninProp!(BubbleProp, nw1, nw2)
         for i = 1:Par.System.NUnique, j = 1:Par.System.NUnique
