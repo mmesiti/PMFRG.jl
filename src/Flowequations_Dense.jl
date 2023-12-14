@@ -120,6 +120,8 @@ function getXBubble!(
     (; N) = Par.NumericalParams
     getXBubblePartition!(;
                          Workspace=Workspace,
+                         γ = Workspace.State.γ,
+                         Γ = Workspace.State.Γ,
                          Lam=Lam,
                          isrange=1:N,
                          itrange=1:N,
@@ -129,8 +131,8 @@ end
 # FIXME: remove reasoning
 # What does getXBubblePartition really need?
 # - Lam
-# - Workspace.State.γ
-# - Workspace.State.Γ
+# - Workspace.State.γ # ok
+# - Workspace.State.Γ # ok
 # - Workspace.Deriv.γ
 # - Workspace.Par.NumericalParams.T
 # - Workspace.Par.NumericalParams.lenIntw
@@ -148,13 +150,19 @@ end
 # - Workspace.Par.System.Nunique
 # - Workspace.X
 """writing to X and XTilde in Workspace, computes bubble diagrams within a range of frequencies given by isrange, itrange and iurange"""
-function getXBubblePartition!(;Workspace::PMFRGWorkspace, Lam, isrange, itrange, iurange)
+function getXBubblePartition!(;Workspace::PMFRGWorkspace,
+                              γ,
+                              Γ,
+                              Lam,
+                              isrange,
+                              itrange,
+                              iurange)
     Par = Workspace.Par
     (; T, N, lenIntw, np_vec) = Par.NumericalParams
     PropsBuffers = Workspace.Buffer.Props
     VertexBuffers = Workspace.Buffer.Vertex
-    iG(x, nw) = iG_(Workspace.State.γ, x, Lam, nw, T)
-    iSKat(x, nw) = iSKat_(Workspace.State.γ, Workspace.Deriv.γ, x, Lam, nw, T)
+    iG(x, nw) = iG_(γ, x, Lam, nw, T)
+    iSKat(x, nw) = iSKat_(γ, Workspace.Deriv.γ, x, Lam, nw, T)
 
     function getKataninProp!(BubbleProp, nw1, nw2)
         for i = 1:Par.System.NUnique, j = 1:Par.System.NUnique
@@ -177,7 +185,7 @@ function getXBubblePartition!(;Workspace::PMFRGWorkspace, Lam, isrange, itrange,
                         if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
                             continue
                         end
-                        addXTilde!(;Γ=Workspace.State.Γ,
+                        addXTilde!(;Γ=Γ,
                                    N=Workspace.Par.NumericalParams.N,
                                    np_vec=Workspace.Par.NumericalParams.np_vec,
                                    Npairs=Workspace.Par.System.Npairs,
@@ -193,7 +201,7 @@ function getXBubblePartition!(;Workspace::PMFRGWorkspace, Lam, isrange, itrange,
                                    nw=nw,
                                    sprop=sprop) # add to XTilde-type bubble functions
                         if (!Par.Options.usesymmetry || nu <= nt)
-                            addX!(;Γ=Workspace.State.Γ,
+                            addX!(;Γ=Γ,
                                   N=Workspace.Par.NumericalParams.N,
                                   np_vec=Workspace.Par.NumericalParams.np_vec,
                                   Npairs=Workspace.Par.System.Npairs,
