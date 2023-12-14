@@ -178,6 +178,10 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                                   Γ=Workspace.State.Γ,
                                   N=Workspace.Par.NumericalParams.N,
                                   np_vec=Workspace.Par.NumericalParams.np_vec,
+                                  Npairs=Workspace.Par.System.Npairs,
+                                  Nsum=Workspace.Par.System.Nsum,
+                                  siteSum=Workspace.Par.System.siteSum,
+                                  invpairs=Workspace.Par.System.invpairs,
                                   is=is,
                                   it=it,
                                   iu=iu,
@@ -214,10 +218,10 @@ end
 # - Workspace.State.Γ #ok
 # - Workspace.Par.NumericalParams.N # ok
 # - Workspace.Par.NumericalParams.np_vec # ok
-# - Workspace.Par.System.Npairs
-# - Workspace.Par.System.Nsum
-# - Workspace.Par.System.siteSum
-# - Workspace.Par.System.invPairs
+# - Workspace.Par.System.Npairs # ok
+# - Workspace.Par.System.Nsum # ok
+# - Workspace.Par.System.siteSum # ok
+# - Workspace.Par.System.invPairs # ok
 # - Workspace.X.a
 # - Workspace.X.b
 # - Workspace.X.c
@@ -235,6 +239,10 @@ function addX!(;
     Γ,
     N,
     np_vec,
+    Npairs,
+    Nsum,
+    siteSum,
+    invpairs,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -242,9 +250,8 @@ function addX!(;
     Props,
     Buffer,
 )
-    (; X, Par) = Workspace
+    (; X) = Workspace
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
-    (; Npairs, Nsum, siteSum, invpairs) = Par.System
 
     ns = np_vec[is]
     nt = np_vec[it]
@@ -318,6 +325,10 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
     Γ,
     N,
     np_vec,
+    Npairs,
+    Nsum,
+    siteSum,
+    invpairs,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -325,9 +336,8 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
     Props::SingleElementMatrix,
     Buffer,
 )
-    (; X, Par) = Workspace
+    (; X) = Workspace
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
-    (; Npairs, Nsum, siteSum, invpairs) = Par.System
 
     ns = np_vec[is]
     nt = np_vec[it]
