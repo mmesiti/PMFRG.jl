@@ -134,6 +134,9 @@ function getXBubble!(
                          PairTypes= Workspace.Par.System.PairTypes,
                          OnsitePairs= Workspace.Par.System.OnsitePairs,
                          NUnique= Workspace.Par.System.NUnique,
+                         usesymmetry=Workspace.Par.Options.usesymmetry,
+                         Buffer=Workspace.Buffer,
+                         X = Workspace.X,
                          Lam=Lam,
                          isrange=1:N,
                          itrange=1:N,
@@ -157,9 +160,9 @@ end
 # - Workspace.Par.System.PairTypes # ok
 # - Workspace.Par.System.OnsitePairs # ok
 # - Workspace.Par.System.NUnique # ok
-# - Workspace.Buffer.Props
-# - Workspace.Buffer.Vertex
-# - Workspace.X
+# - Workspace.Par.Options.usesymmetry # ok
+# - Workspace.Buffer # ok
+# - Workspace.X # ok
 """writing to X and XTilde in Workspace, computes bubble diagrams within a range of frequencies given by isrange, itrange and iurange"""
 function getXBubblePartition!(;Workspace::PMFRGWorkspace,
                               γ,
@@ -176,13 +179,15 @@ function getXBubblePartition!(;Workspace::PMFRGWorkspace,
                               PairTypes,
                               OnsitePairs,
                               NUnique,
+                              usesymmetry,
+                              Buffer,
+                              X,
                               Lam,
                               isrange,
                               itrange,
                               iurange)
-    Par = Workspace.Par
-    PropsBuffers = Workspace.Buffer.Props
-    VertexBuffers = Workspace.Buffer.Vertex
+    PropsBuffers = Buffer.Props
+    VertexBuffers = Buffer.Vertex
     iG(x, nw) = iG_(γ, x, Lam, nw, T)
     iSKat(x, nw) = iSKat_(γ, γDeriv, x, Lam, nw, T)
 
@@ -214,15 +219,15 @@ function getXBubblePartition!(;Workspace::PMFRGWorkspace,
                                    invpairs=invpairs,
                                    PairTypes=PairTypes,
                                    OnsitePairs=OnsitePairs,
-                                   XTa=Workspace.X.Ta,
-                                   XTb=Workspace.X.Tb,
-                                   XTc=Workspace.X.Tc,
+                                   XTa=X.Ta,
+                                   XTb=X.Tb,
+                                   XTc=X.Tc,
                                    is=is,
                                    it=it,
                                    iu=iu,
                                    nw=nw,
                                    sprop=sprop) # add to XTilde-type bubble functions
-                        if (!Par.Options.usesymmetry || nu <= nt)
+                        if (!usesymmetry || nu <= nt)
                             addX!(;Γ=Γ,
                                   N=N,
                                   np_vec=np_vec,
@@ -230,9 +235,9 @@ function getXBubblePartition!(;Workspace::PMFRGWorkspace,
                                   Nsum=Nsum,
                                   siteSum=siteSum,
                                   invpairs=invpairs,
-                                  Xa=Workspace.X.a,
-                                  Xb=Workspace.X.b,
-                                  Xc=Workspace.X.c,
+                                  Xa=X.a,
+                                  Xb=X.b,
+                                  Xc=X.c,
                                   is=is,
                                   it=it,
                                   iu=iu,
