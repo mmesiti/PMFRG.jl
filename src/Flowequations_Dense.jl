@@ -176,6 +176,8 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                         if (!Par.Options.usesymmetry || nu <= nt)
                             addX!(;Workspace=Workspace,
                                   Γ=Workspace.State.Γ,
+                                  N=Workspace.Par.NumericalParams.N,
+                                  np_vec=Workspace.Par.NumericalParams.np_vec,
                                   is=is,
                                   it=it,
                                   iu=iu,
@@ -209,9 +211,9 @@ end
 
 # FIXME: remove reasoning
 # This function needs:
-# - Workspace.State.Γ
-# - Workspace.Par.NumericalParams.N
-# - Workspace.Par.NumericalParams.np_vec
+# - Workspace.State.Γ #ok
+# - Workspace.Par.NumericalParams.N # ok
+# - Workspace.Par.NumericalParams.np_vec # ok
 # - Workspace.Par.System.Npairs
 # - Workspace.Par.System.Nsum
 # - Workspace.Par.System.siteSum
@@ -231,6 +233,8 @@ adds part of X functions in Matsubara sum at nwpr containing the site summation 
 function addX!(;
     Workspace::PMFRGWorkspace,
     Γ,
+    N,
+    np_vec,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -240,7 +244,6 @@ function addX!(;
 )
     (; X, Par) = Workspace
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
-    (; N, np_vec) = Par.NumericalParams
     (; Npairs, Nsum, siteSum, invpairs) = Par.System
 
     ns = np_vec[is]
@@ -293,9 +296,9 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 
 # FIXME: remove reasoning
 # This function needs:
-# - Workspace.State.Γ
-# - Workspace.Par.NumericalParams.N
-# - Workspace.Par.NumericalParams.Np_vec
+# - Workspace.State.Γ # ok
+# - Workspace.Par.NumericalParams.N # ok
+# - Workspace.Par.NumericalParams.Np_vec # ok
 # - Workspace.Par.System.Npairs
 # - Workspace.Par.System.Nsum
 # - Workspace.Par.System.siteSum
@@ -313,6 +316,8 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 @inline function addX!(;
     Workspace::PMFRGWorkspace,
     Γ,
+    N,
+    np_vec,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -322,7 +327,6 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 )
     (; X, Par) = Workspace
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
-    (; N, np_vec) = Par.NumericalParams
     (; Npairs, Nsum, siteSum, invpairs) = Par.System
 
     ns = np_vec[is]
