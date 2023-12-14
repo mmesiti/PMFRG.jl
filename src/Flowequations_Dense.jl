@@ -105,6 +105,12 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace, Lam)
 end
 # @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
 
+
+# FIXME: remove reasoning
+# What does getXBubble really need?
+# - Par.NumericalParams.N
+# - Lam
+# - Everything needed by getXBubblePartition!
 function getXBubble!(
     Workspace::PMFRGWorkspace,
     Lam,
@@ -115,6 +121,27 @@ function getXBubble!(
     getXBubblePartition!(Workspace, Lam, 1:N, 1:N, 1:N)
 end
 
+# FIXME: remove reasoning
+# What does getXBubblePartition really need?
+# - Workspace.Par.NumericalParams.T
+# - Workspace.Par.NumericalParams.lenIntw
+# - Workspace.Par.NumericalParams.np_vec
+# - Workspace.Buffer.Props
+# - Workspace.Buffer.Vertex
+# - Workspace.State.γ
+# - Lam
+# - Workspace.Deriv.γ
+# - Workspace.X
+# - Workspace.State.Γ
+# - Workspace.Par.NumericalParams.N
+# - Workspace.Par.NumericalParams.np_vec
+# - Workspace.Par.System.siteSum
+# - Workspace.Par.System.Npairs
+# - Workspace.Par.System.Nsum
+# - Workspace.Par.System.invpairs
+# - Workspace.Par.System.Pairtypes
+# - Workspace.Par.System.OnsitePairs
+# - Workspace.Par.System.Nunique
 """writing to X and XTilde in Workspace, computes bubble diagrams within a range of frequencies given by isrange, itrange and iurange"""
 function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, iurange)
     Par = Workspace.Par
@@ -173,6 +200,24 @@ end
     return wpw1, wpw2, wmw3, wmw4
 end
 
+# FIXME: remove reasoning
+# This function needs:
+# - Workspace.State.Γ
+# - Workspace.Par.NumericalParams.N
+# - Workspace.Par.NumericalParams.np_vec
+# - Workspace.Par.System.Npairs
+# - Workspace.Par.System.Nsum
+# - Workspace.Par.System.siteSum
+# - Workspace.Par.System.invPairs
+# - Workspace.X.a
+# - Workspace.X.b
+# - Workspace.X.c
+# - is
+# - it
+# - iu
+# - nwpr
+# - Props
+# - Buffer
 """
 adds part of X functions in Matsubara sum at nwpr containing the site summation for a set of s t and u frequencies. This is the most numerically demanding part!
 """
@@ -235,7 +280,104 @@ function addX!(
     end
     return
 end
-##
+
+const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
+
+# FIXME: remove reasoning
+# This function needs:
+# - Workspace.State.Γ
+# - Workspace.Par.NumericalParams.N
+# - Workspace.Par.NumericalParams.Np_vec
+# - Workspace.Par.System.Npairs
+# - Workspace.Par.System.Nsum
+# - Workspace.Par.System.siteSum
+# - Workspace.Par.System.invpairs
+# - Workspace.X.a
+# - Workspace.X.b
+# - Workspace.X.c
+# - is
+# - it
+# - iu
+# - nwpr
+# - Props
+# - Buffer
+"""Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
+@inline function addX!(
+    Workspace::PMFRGWorkspace,
+    is::Integer,
+    it::Integer,
+    iu::Integer,
+    nwpr::Integer,
+    Props::SingleElementMatrix,
+    Buffer,
+)
+    (; State, X, Par) = Workspace
+    (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
+    (; N, np_vec) = Par.NumericalParams
+    (; Npairs, Nsum, siteSum, invpairs) = Par.System
+
+    ns = np_vec[is]
+    nt = np_vec[it]
+    nu = np_vec[iu]
+    wpw1, wpw2, wmw3, wmw4 = mixedFrequencies(ns, nt, nu, nwpr)
+
+    bufferV_!(Va12, State.Γ.a, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Vb12, State.Γ.b, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Vc12, State.Γ.c, ns, wpw1, wpw2, invpairs, N)
+
+    bufferV_!(Va34, State.Γ.a, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vb34, State.Γ.b, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vc34, State.Γ.c, ns, wmw3, wmw4, invpairs, N)
+
+    bufferV_!(Vc21, State.Γ.c, ns, wpw2, wpw1, invpairs, N)
+    bufferV_!(Vc43, State.Γ.c, ns, wmw4, wmw3, invpairs, N)
+    # get fields of siteSum struct as Matrices for better use of LoopVectorization
+    S_ki = siteSum.ki
+    S_kj = siteSum.kj
+    S_m = siteSum.m
+    Prop = only(Props)
+    # Prop = Props
+    for Rij = 1:Npairs
+        #loop over all left hand side inequivalent pairs Rij
+        Xa_sum = 0.0 #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
+        Xb_sum = 0.0
+        Xc_sum = 0.0
+        @turbo unroll = 1 for k_spl = 1:Nsum[Rij]
+            #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort!
+            ki, kj, m = S_ki[k_spl, Rij], S_kj[k_spl, Rij], S_m[k_spl, Rij]
+
+            Xa_sum += (+Va12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj] * 2) * m
+
+            Xb_sum += (+Va12[ki] * Vb34[kj] + Vb12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj]) * m
+
+            Xc_sum += (+Vc12[ki] * Vc34[kj] + Vc21[ki] * Vc43[kj]) * m
+        end
+        X.a[Rij, is, it, iu] += Xa_sum * Prop
+        X.b[Rij, is, it, iu] += Xb_sum * Prop
+        X.c[Rij, is, it, iu] += Xc_sum * Prop
+    end
+    return
+end
+
+
+# FIXME: remove reasoning
+# This function needs:
+# - Workspace.State.Γ
+# - Workspace.Par.NumericalParams.N
+# - Workspace.Par.NumericalParams.np_vec
+# - Workspace.Par.System.Npairs
+# - Workspace.Par.System.invpairs
+# - Workspace.Par.System.Pairtypes
+# - Workspace.Par.System.OnsitePairs
+# - Workspace.X.Ta
+# - Workspace.X.Tb
+# - Workspace.X.Tc
+# - Workspace.X.Td
+# - is
+# - it
+# - iu
+# - nwpr
+# - Props
 function addXTilde!(
     Workspace::PMFRGWorkspace,
     is::Integer,
@@ -306,8 +448,24 @@ function addXTilde!(
         )
     end
 end
-const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 
+# FIXME remove reasoning
+# This function needs:
+# - Workspace.State.Γ
+# - Workspace.Par.NumericalParams.N
+# - Workspace.Par.NumericalParams.np_vec
+# - Workspace.Par.System.Npairs
+# - Workspace.Par.System.invpairs
+# - Workspace.Par.System.OnSitePairs
+# - Workspace.X.Ta
+# - Workspace.X.Tb
+# - Workspace.X.Tc
+# - Workspace.X.Td
+# - is
+# - it
+# - iu
+# - nwpr
+# - Props
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 @inline function addXTilde!(
     Workspace::PMFRGWorkspace,
@@ -380,64 +538,6 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
     end
 end
 
-
-"""Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
-@inline function addX!(
-    Workspace::PMFRGWorkspace,
-    is::Integer,
-    it::Integer,
-    iu::Integer,
-    nwpr::Integer,
-    Props::SingleElementMatrix,
-    Buffer,
-)
-    (; State, X, Par) = Workspace
-    (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
-    (; N, np_vec) = Par.NumericalParams
-    (; Npairs, Nsum, siteSum, invpairs) = Par.System
-
-    ns = np_vec[is]
-    nt = np_vec[it]
-    nu = np_vec[iu]
-    wpw1, wpw2, wmw3, wmw4 = mixedFrequencies(ns, nt, nu, nwpr)
-
-    bufferV_!(Va12, State.Γ.a, ns, wpw1, wpw2, invpairs, N)
-    bufferV_!(Vb12, State.Γ.b, ns, wpw1, wpw2, invpairs, N)
-    bufferV_!(Vc12, State.Γ.c, ns, wpw1, wpw2, invpairs, N)
-
-    bufferV_!(Va34, State.Γ.a, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vb34, State.Γ.b, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vc34, State.Γ.c, ns, wmw3, wmw4, invpairs, N)
-
-    bufferV_!(Vc21, State.Γ.c, ns, wpw2, wpw1, invpairs, N)
-    bufferV_!(Vc43, State.Γ.c, ns, wmw4, wmw3, invpairs, N)
-    # get fields of siteSum struct as Matrices for better use of LoopVectorization
-    S_ki = siteSum.ki
-    S_kj = siteSum.kj
-    S_m = siteSum.m
-    Prop = only(Props)
-    # Prop = Props
-    for Rij = 1:Npairs
-        #loop over all left hand side inequivalent pairs Rij
-        Xa_sum = 0.0 #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
-        Xb_sum = 0.0
-        Xc_sum = 0.0
-        @turbo unroll = 1 for k_spl = 1:Nsum[Rij]
-            #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
-            ki, kj, m = S_ki[k_spl, Rij], S_kj[k_spl, Rij], S_m[k_spl, Rij]
-
-            Xa_sum += (+Va12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj] * 2) * m
-
-            Xb_sum += (+Va12[ki] * Vb34[kj] + Vb12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj]) * m
-
-            Xc_sum += (+Vc12[ki] * Vc34[kj] + Vc21[ki] * Vc43[kj]) * m
-        end
-        X.a[Rij, is, it, iu] += Xa_sum * Prop
-        X.b[Rij, is, it, iu] += Xb_sum * Prop
-        X.c[Rij, is, it, iu] += Xc_sum * Prop
-    end
-    return
-end
 
 """Use symmetries and identities to compute the rest of bubble functions"""
 function symmetrizeBubble!(X::BubbleType, Par::PMFRGParams)
