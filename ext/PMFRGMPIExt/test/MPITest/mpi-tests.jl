@@ -5,11 +5,6 @@ include("./test_partition.jl")
 include("./test_best_partition_triangle.jl")
 function test_mpi()
     @testset verbose = true "MPI tests" begin
-        @testset verbose = true "Unit tests for MPI functionality" begin
-            test_1D_partition()
-            test_best_partition_triangle()
-        end
-
         function run_mpi_script(script, n, testname)
             function print_header()
                 linelength = 79
@@ -34,6 +29,15 @@ function test_mpi()
 
         @testset verbose = true "MPI tests - external executables" begin
             dir = dirname(@__FILE__)
+            ("temp_rank1" in readdir()) && rm("temp_rank1", recursive = true)
+            run_mpi_script(
+                joinpath(dir, "generate_data_example_mpi.jl"),
+                2,
+                "Generate Data Example",
+            )
+
+            @test ("temp_rank0" in readdir())
+            @test !("temp_rank1" in readdir())
             run_mpi_script(
                 joinpath(dir, "..", "RegressionTests", "PMFRG.getXBubbleMPI.jl"),
                 2,
@@ -46,12 +50,10 @@ function test_mpi()
                 "Ibcast! communication example - test_chunk_communication.jl",
             )
 
-            run_mpi_script(
-                joinpath(dir, "generate_data_example_mpi.jl"),
-                2,
-                "Generate Data Example",
-            )
-
+        end
+        @testset verbose = true "Unit tests for MPI functionality" begin
+            test_1D_partition()
+            test_best_partition_triangle()
         end
     end
 end

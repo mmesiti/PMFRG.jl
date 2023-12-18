@@ -54,7 +54,7 @@ flowpath = "$tempdir/flows/"
 
 Solution, saved_values = SolveFRG(
     Par,
-    UseMPI(rank,nranks),
+    UseMPI(rank, nranks),
     MainFile = mainFile,
     CheckpointDirectory = flowpath,
     method = DP5(),

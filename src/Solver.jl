@@ -106,11 +106,15 @@ function launchPMFRG!(
     kwargs...,
 )
 
-    Par = setup.Par
+    (; Par, ParallelizationScheme) = setup
 
     typeof(CheckpointDirectory) == String && (
-        CheckpointDirectory =
-            setupDirectory(CheckpointDirectory, Par, overwrite = overwrite_Checkpoints)
+        CheckpointDirectory = setupDirectory(
+            CheckpointDirectory,
+            Par,
+            ParallelizationScheme,
+            overwrite = overwrite_Checkpoints,
+        )
     )
 
     (; Lam_max, Lam_min, accuracy) = Par.NumericalParams
@@ -131,6 +135,7 @@ function launchPMFRG!(
                 Lam,
                 Par,
                 VertexCheckpoints,
+                ParallelizationScheme,
             )
         end
     end
@@ -141,7 +146,7 @@ function launchPMFRG!(
             println("Time taken for output saving: ")
             bareOutput(State, t, integrator)
             println("")
-            writeOutput(State, saved_values, Lam, Par)
+            writeOutput(State, saved_values, Lam, Par, ParallelizationScheme)
         end
     end
 
@@ -194,10 +199,11 @@ function launchPMFRG!(
         saved_values,
         t_to_Lam(sol.t[end]),
         Par,
+        ParallelizationScheme,
     )
-    saveMainOutput(MainFile, sol, saved_values, Par, Group)
+    saveMainOutput(MainFile, sol, saved_values, Par, Group, ParallelizationScheme)
 
-    SetCompletionCheckmark(CheckpointDirectory)
+    SetCompletionCheckmark(CheckpointDirectory, ParallelizationScheme)
     return sol, saved_values
 end
 
@@ -231,7 +237,7 @@ function getObservables(::Type{Observables}, State::ArrayPartition, Lam, Par)
     end
 end
 
-writeOutput(State::ArrayPartition, saved_values, Lam, Par) =
+writeOutput(State::ArrayPartition, saved_values, Lam, Par, ::MultiThreaded) =
     writeOutput(State.x..., saved_values.saveval[end], Lam, Par)
 
 function writeOutput(f_int, gamma, Va, Vb, Vc, obs, Lam, Par)

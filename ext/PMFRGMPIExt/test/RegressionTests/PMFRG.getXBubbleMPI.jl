@@ -32,7 +32,7 @@ nranks = MPI.Comm_size(MPI.COMM_WORLD)
         (; Buffs) = PMFRG.AllocateSetup(Par)
         Workspace = PMFRG.OneLoopWorkspace(State, Deriv, X0, Buffs, Par)
 
-        PMFRG.getXBubble!(Workspace, Lam, UseMPI(rank,nranks))
+        PMFRG.getXBubble!(Workspace, Lam, UseMPI(rank, nranks))
 
         (; X) = h5deserialize(h5file, "arguments_post", i)
         @test compare_arguments_post(X, X0)

@@ -113,7 +113,7 @@ function modifyParams(Par; modifyParams...)
     Par = Params(Par.System, getPMFRGMethod(Par); NumParKwargs..., modifyParams...)
 end
 
-function setupDirectory(DirPath, Par; overwrite = false)
+function setupDirectory(DirPath, Par, ::MultiThreaded; overwrite = false)
     DirPath = generateName_verbose(DirPath, Par)
     overwrite || (DirPath = UniqueDirName(DirPath))
     println("Checkpoints saved at $(abspath(DirPath))")
@@ -122,12 +122,21 @@ function setupDirectory(DirPath, Par; overwrite = false)
     return DirPath
 end
 
+saveCurrentState(
+    DirPath::String,
+    State::AbstractArray,
+    saved_Values::DiffEqCallbacks.SavedValues,
+    Lam::Real,
+    Par::PMFRGParams,
+) = saveCurrentState(DirPath, State, saved_Values, Lam, Par, MultiThreaded())
+
 function saveCurrentState(
     DirPath::String,
     State::AbstractArray,
     saved_Values::DiffEqCallbacks.SavedValues,
     Lam::Real,
     Par::PMFRGParams,
+    ::MultiThreaded,
 )
     Filename = joinpath(DirPath, "CurrentState.h5")
     saveState(Filename, State, Lam, "w")
@@ -135,23 +144,25 @@ function saveCurrentState(
     saveObs(Filename, saved_Values, "Observables")
     Filename
 end
+
 saveCurrentState(
     DirPath::Nothing,
     State::AbstractArray,
     saved_Values::DiffEqCallbacks.SavedValues,
     Lam::Real,
     Par::PMFRGParams,
+    ::AbstractParallelizationScheme,
 ) = nothing
 
 """Rename CurrentState to FinalState as indicator that Job is finished"""
-function SetCompletionCheckmark(DirPath::String)
+function SetCompletionCheckmark(DirPath::String, ::MultiThreaded)
     CurrState = joinpath(DirPath, "CurrentState.h5")
     FinState = UniqueFileName(joinpath(DirPath, "FinalState.h5"))
     if ispath(CurrState)
         mv(CurrState, FinState)
     end
 end
-SetCompletionCheckmark(DirPath::Nothing) = nothing
+SetCompletionCheckmark(DirPath::Nothing, ::AbstractParallelizationScheme) = nothing
 
 file_extension_pos(file::String) = findlast('.', file)
 function file_extension(file::String)
@@ -362,9 +373,16 @@ function saveMainOutput(Filename::String, saved_values, Group::String)
 end
 saveMainOutput(::Nothing, args...) = nothing
 
-
-function setCheckpoint(Directory::String, State, saved_values, Lam, Par, checkPointList)
-    saveCurrentState(Directory, State, saved_values, Lam, Par)
+function setCheckpoint(
+    Directory::String,
+    State,
+    saved_values,
+    Lam,
+    Par,
+    checkPointList,
+    ::MultiThreaded,
+)
+    saveCurrentState(Directory, State, saved_values, Lam, Par, MultiThreaded())
     if !isempty(checkPointList)
         if Lam < last(checkPointList)
             Checkpoint = pop!(checkPointList)
@@ -377,7 +395,7 @@ function setCheckpoint(Directory::String, State, saved_values, Lam, Par, checkPo
     end
 end
 
-function setCheckpoint(Directory::Nothing, State, saved_values, Lam, Par, checkPointList)
+function setCheckpoint(::Nothing, args...)
     return
 end
 
@@ -406,6 +424,7 @@ saveMainOutput(
     saved_values::DiffEqCallbacks.SavedValues,
     Par::PMFRGParams,
     Group::String,
+    ::MultiThreaded,
 ) = saveMainOutput(Filename, Solution.u[end], saved_values, saved_values.t[end], Par, Group)
 
 function saveMainOutput(
