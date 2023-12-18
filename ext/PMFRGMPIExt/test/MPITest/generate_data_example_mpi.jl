@@ -15,6 +15,7 @@ using MPI
 
 MPI.Init()
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
+nranks = MPI.Comm_size(MPI.COMM_WORLD)
 
 # Number of nearest neighbor bonds
 # up to which correlations are treated in the lattice.
@@ -53,7 +54,7 @@ flowpath = "$tempdir/flows/"
 
 Solution, saved_values = SolveFRG(
     Par,
-    UseMPI(),
+    UseMPI(rank,nranks),
     MainFile = mainFile,
     CheckpointDirectory = flowpath,
     method = DP5(),

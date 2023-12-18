@@ -19,6 +19,8 @@ fname = joinpath(thisdir, non_mpi_regrtest_location, "PMFRG.getXBubble.data.h5")
 h5file = h5open(fname, "r")
 
 MPI.Init()
+rank = MPI.Comm_rank(MPI.COMM_WORLD)
+nranks = MPI.Comm_size(MPI.COMM_WORLD)
 
 @testset verbose = true "Tests for getXBubble!" begin
     ncases = read(h5file["Ncases"])
@@ -30,7 +32,7 @@ MPI.Init()
         (; Buffs) = PMFRG.AllocateSetup(Par)
         Workspace = PMFRG.OneLoopWorkspace(State, Deriv, X0, Buffs, Par)
 
-        PMFRG.getXBubble!(Workspace, Lam, UseMPI())
+        PMFRG.getXBubble!(Workspace, Lam, UseMPI(rank,nranks))
 
         (; X) = h5deserialize(h5file, "arguments_post", i)
         @test compare_arguments_post(X, X0)

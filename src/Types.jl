@@ -10,7 +10,10 @@ abstract type PMFRGWorkspace end
 abstract type AbstractParallelizationScheme end
 
 struct MultiThreaded <: AbstractParallelizationScheme end
-struct UseMPI <: AbstractParallelizationScheme end
+struct UseMPI <: AbstractParallelizationScheme
+    rank::Int64
+    nranks::Int64
+end
 
 """
 Struct to hold all relevant quantities that are needed throughout the computation. 
