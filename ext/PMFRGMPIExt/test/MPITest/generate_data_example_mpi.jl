@@ -12,6 +12,7 @@ using SpinFRGLattices, PMFRG
 using SpinFRGLattices.SquareLattice
 
 using MPI
+using PencilArrays
 
 MPI.Init()
 

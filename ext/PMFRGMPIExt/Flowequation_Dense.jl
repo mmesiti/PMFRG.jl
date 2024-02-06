@@ -2,6 +2,10 @@ using PMFRG, MPI, TimerOutputs
 include("mpi/MPI_Detail.jl")
 import .MPI_Detail
 
+function PMFRG.getXBubble!(Workspace, Lam, ::Int64)
+
+end
+
 function PMFRG.getXBubble!(Workspace, Lam, ::PMFRG.UseMPI)
     (; X, Par) = Workspace
     (; N, np_vec) = Par.NumericalParams

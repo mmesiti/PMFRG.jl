@@ -2,7 +2,7 @@ Base.show(io::IO, f::Float64) = @printf(io, "%1.15f", f)
 ##
 _getFloatType(Par::PMFRGParams) = typeof(Par.NumericalParams.T)
 
-function InitializeState(Par::PMFRGParams)
+function InitializeState(Par::PMFRGParams, ::MultiThreaded)
     (; couplings) = Par.System
 
     floattype = _getFloatType(Par)
@@ -81,7 +81,7 @@ SolveFRG(
     ParallelizationScheme::AbstractParallelizationScheme = MultiThreaded();
     kwargs...,
 ) = launchPMFRG!(
-    InitializeState(Par),
+    InitializeState(Par, ParallelizationScheme),
     AllocateSetup(Par, ParallelizationScheme),
     getDeriv!;
     kwargs...,
@@ -202,6 +202,7 @@ end
 function generateSubstituteDeriv(getDeriv!::Function)
 
     function DerivSubs!(Deriv, State, par, t)
+        # println(t)
         Lam = t_to_Lam(t)
         a = getDeriv!(Deriv, State, par, Lam)
         Deriv .*= Lam

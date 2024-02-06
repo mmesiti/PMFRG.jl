@@ -169,7 +169,7 @@ via the [MPI.jl wrapper](https://juliaparallel.org/MPI.jl/stable/).
 
 In order to activate the extension the following conditions are necessary:
 - the Julia version needs to be >= 1.9 (the package extension mechanism is not implemented in older versions)
-- the MPI package needs to be added to the active environment 
+- the `MPI` and `PencilArrays` packages need to be added to the active environment.
 Then, the Julia script can be launched using [`mpiexecjl`](https://juliaparallel.org/MPI.jl/stable/usage/#Julia-wrapper-for-mpiexec).
 
 An example of usage is in `ext/PMFRGMPIExt/test/MPITest/generate_data_example.mpi.jl`

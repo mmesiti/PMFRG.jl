@@ -5,6 +5,7 @@ function getEmptyWorkspace(Par::PMFRG.OneLoopParams)
     (; Ngamma) = Par.NumericalParams
     State = PMFRG.StateType(NUnique, Ngamma, PMFRG.getVDims(Par), PMFRG._getFloatType(Par))
     Deriv = PMFRG.StateType(NUnique, Ngamma, PMFRG.getVDims(Par), PMFRG._getFloatType(Par))
+
     setup = PMFRG.AllocateSetup(Par)
     (X, Buffs, Par) = setup
     PMFRG.OneLoopWorkspace(Deriv, State, X, Buffs, Par)
@@ -55,7 +56,7 @@ function test_TypeStability(Par, WS, aX, aXT)
 end
 
 function getEmptyWorkspace(Par::PMFRG.TwoLoopParams)
-    State = PMFRG.InitializeState(Par, MultiThreaded())
+    State = PMFRG.InitializeState(Par,MultiThreaded())
     Deriv = similar(State)
     setup = PMFRG.AllocateSetup(Par)
     (X, Y, Buffs, Par) = setup
