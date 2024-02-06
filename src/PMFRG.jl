@@ -52,7 +52,27 @@ using FixedPoint
 include("MultiLoop/MultiLoopPMFRG.jl")
 export MultiLoop, Parquet, SolveParquet
 
-export UseMPI
+#export UseMPI
+
+function __init__()
+  if !isnothing(Base.get_extension(@__MODULE__(), :PMFRGMPIExt))
+    println("Loading symbols from PMFRGMPIExt in ")
+    PMFRGMPIExt = Base.get_extension(@__MODULE__(), :PMFRGMPIExt)
+    for n in names(PMFRGMPIExt)
+        if Base.isidentifier(n)
+            @eval export $n
+            # Ok this does not work for many reasons,
+            # for example, if trying to use precompilation:
+            # LoadError: InitError: Evaluation into the closed module `PMFRG`
+            # breaks incremental compilation because the side effects
+            # will not be permanent. This is likely due to
+            # some other module mutating `PMFRG` with `eval`
+            # during precompilation - don't do this.
+        end
+    end
+  end
+end
+
 
 # export UnitTests
 
