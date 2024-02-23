@@ -1,17 +1,23 @@
-function getDeriv!(Deriv, State, setup::Tuple{BubbleType,T,OneLoopParams}, Lam) where {T}
-    (X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
-    Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
+function getDeriv!(Deriv, State, setup, Lam)
+    @timeit_debug "getDeriv!" begin
+        @timeit_debug "setup" (; X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
+        @timeit_debug "workspace" Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
 
-    getDFint!(Workspace, Lam)
-    get_Self_Energy!(Workspace, Lam)
+        @timeit_debug "getDFint!" getDFint!(Workspace, Lam)
+        @timeit_debug "get_Self_Energy!" get_Self_Energy!(Workspace, Lam)
 
-    getXBubble!(Workspace, Lam)
+        @timeit_debug "getXBubble!" getXBubble!(Workspace, Lam, setup.ParallelizationScheme)
 
-    symmetrizeBubble!(Workspace.X, Par)
+        @timeit_debug "symmetrizeBubble!" symmetrizeBubble!(Workspace.X, Par)
 
-    addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
-    symmetrizeVertex!(Workspace.Deriv.Γ, Par)
-    # flush(stdout)
+        @timeit_debug "addToVertexFromBubble!" addToVertexFromBubble!(
+            Workspace.Deriv.Γ,
+            Workspace.X,
+        )
+        @timeit_debug "symmetrizeVertex!" symmetrizeVertex!(Workspace.Deriv.Γ, Par)
+        flush(stdout)
+    end
+
     return
 end
 
@@ -99,13 +105,38 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace, Lam)
 end
 # @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
 
-function getXBubble!(Workspace::PMFRGWorkspace, Lam)
-    Par = Workspace.Par
+function getXBubble!(Workspace, Lam, ParallelizationScheme::MultiThreaded = MultiThreaded())
+    (; N) = Workspace.Par.NumericalParams
+    getXBubblePartition!(
+        Workspace.X,
+        Workspace.State,
+        Workspace.Deriv,
+        Workspace.Par,
+        Workspace.Buffer,
+        Lam,
+        1:N,
+        1:N,
+        1:N,
+    )
+end
+
+"""writing to X and XTilde in Workspace, computes bubble diagrams within a range of frequencies given by isrange, itrange and iurange"""
+function getXBubblePartition!(
+    X::BubbleType,
+    State::StateType,
+    Deriv::StateType,
+    Par,
+    Buffers,
+    Lam,
+    isrange,
+    itrange,
+    iurange,
+)
     (; T, N, lenIntw, np_vec) = Par.NumericalParams
-    PropsBuffers = Workspace.Buffer.Props
-    VertexBuffers = Workspace.Buffer.Vertex
-    iG(x, nw) = iG_(Workspace.State.γ, x, Lam, nw, T)
-    iSKat(x, nw) = iSKat_(Workspace.State.γ, Workspace.Deriv.γ, x, Lam, nw, T)
+    PropsBuffers = Buffers.Props
+    VertexBuffers = Buffers.Vertex
+    iG(x, nw) = iG_(State.γ, x, Lam, nw, T)
+    iSKat(x, nw) = iSKat_(State.γ, Deriv.γ, x, Lam, nw, T)
 
     function getKataninProp!(BubbleProp, nw1, nw2)
         for i = 1:Par.System.NUnique, j = 1:Par.System.NUnique
@@ -114,7 +145,7 @@ function getXBubble!(Workspace::PMFRGWorkspace, Lam)
         return SMatrix(BubbleProp)
     end
     @sync begin
-        for is = 1:N, it = 1:N
+        for is in isrange, it in itrange
             Threads.@spawn begin
                 BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
                 Buffer = take!(VertexBuffers)
@@ -123,14 +154,14 @@ function getXBubble!(Workspace::PMFRGWorkspace, Lam)
                 # Workspace.X.a .= Buffer.Va12[begin]
                 for nw = -lenIntw:lenIntw-1 # Matsubara sum
                     sprop = getKataninProp!(BubbleProp, nw, nw + ns)
-                    for iu = 1:N
+                    for iu in iurange
                         nu = np_vec[iu]
                         if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
                             continue
                         end
-                        addXTilde!(Workspace, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
+                        addXTilde!(X, State, Par, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
                         if (!Par.Options.usesymmetry || nu <= nt)
-                            addX!(Workspace, is, it, iu, nw, sprop, Buffer)# add to X-type bubble functions
+                            addX!(X, State, Par, is, it, iu, nw, sprop, Buffer)# add to X-type bubble functions
                         end
                     end
                 end
@@ -139,7 +170,9 @@ function getXBubble!(Workspace::PMFRGWorkspace, Lam)
             end
         end
     end
+
 end
+
 
 @inline function mixedFrequencies(ns, nt, nu, nwpr)
     nw1 = Int((ns + nt + nu - 1) / 2)
@@ -158,7 +191,9 @@ end
 adds part of X functions in Matsubara sum at nwpr containing the site summation for a set of s t and u frequencies. This is the most numerically demanding part!
 """
 function addX!(
-    Workspace::PMFRGWorkspace,
+    X::BubbleType,
+    State::StateType,
+    Par,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -166,7 +201,6 @@ function addX!(
     Props,
     Buffer,
 )
-    (; State, X, Par) = Workspace
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, Nsum, siteSum, invpairs) = Par.System
@@ -218,7 +252,9 @@ function addX!(
 end
 ##
 function addXTilde!(
-    Workspace::PMFRGWorkspace,
+    X::BubbleType,
+    State::StateType,
+    Par,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -226,7 +262,6 @@ function addXTilde!(
     Props,
 )
 
-    (; State, X, Par) = Workspace
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
@@ -291,7 +326,9 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 @inline function addXTilde!(
-    Workspace::PMFRGWorkspace,
+    X::BubbleType,
+    State::StateType,
+    Par,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -299,7 +336,6 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
     Props::SingleElementMatrix,
 )
 
-    (; State, X, Par) = Workspace
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, OnsitePairs) = Par.System
 
@@ -364,15 +400,16 @@ end
 
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 @inline function addX!(
-    Workspace::PMFRGWorkspace,
+    X::BubbleType{T},
+    State::StateType,
+    Par,
     is::Integer,
     it::Integer,
     iu::Integer,
     nwpr::Integer,
     Props::SingleElementMatrix,
     Buffer,
-)
-    (; State, X, Par) = Workspace
+) where {T}
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, Nsum, siteSum, invpairs) = Par.System
@@ -400,18 +437,20 @@ end
     # Prop = Props
     for Rij = 1:Npairs
         #loop over all left hand side inequivalent pairs Rij
-        Xa_sum = 0.0 #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
-        Xb_sum = 0.0
-        Xc_sum = 0.0
+        Xa_sum = zero(T) #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
+        Xb_sum = zero(T)
+        Xc_sum = zero(T)
         @turbo unroll = 1 for k_spl = 1:Nsum[Rij]
             #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
             ki, kj, m = S_ki[k_spl, Rij], S_kj[k_spl, Rij], S_m[k_spl, Rij]
 
-            Xa_sum += (+Va12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj] * 2) * m
+            mConv = convert(T, m)
+            Xa_sum += (+Va12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj] * 2) * mConv
 
-            Xb_sum += (+Va12[ki] * Vb34[kj] + Vb12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj]) * m
+            Xb_sum +=
+                (+Va12[ki] * Vb34[kj] + Vb12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj]) * mConv
 
-            Xc_sum += (+Vc12[ki] * Vc34[kj] + Vc21[ki] * Vc43[kj]) * m
+            Xc_sum += (+Vc12[ki] * Vc34[kj] + Vc21[ki] * Vc43[kj]) * mConv
         end
         X.a[Rij, is, it, iu] += Xa_sum * Prop
         X.b[Rij, is, it, iu] += Xb_sum * Prop

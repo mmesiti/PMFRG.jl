@@ -7,12 +7,13 @@ using SpinFRGLattices,
     LoopVectorization,
     StructArrays,
     HDF5,
-    H5Zblosc
+    H5Zblosc,
+    TimerOutputs
 
 using SpinFRGLattices.StaticArrays
 
 export SolveFRG, Params, OneLoopParams, BS3, Vern7, DP5, version, getChi, OneLoop
-version() = """v.2.1.8"""
+version() = v"2.2.1"
 # Essentials
 include("Types.jl")
 include("OneLoopTypes.jl")
@@ -50,6 +51,8 @@ using FixedPoint
 
 include("MultiLoop/MultiLoopPMFRG.jl")
 export MultiLoop, Parquet, SolveParquet
+
+export UseMPI
 
 # export UnitTests
 

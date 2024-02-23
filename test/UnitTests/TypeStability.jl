@@ -18,16 +18,20 @@ function test_OneLoopAllocations(Par = Params(getPolymer(2)))
     SBuff = take!(WS.Buffer.Props)
     VBuff = take!(WS.Buffer.Vertex)
     SBuff1 = convertToSMatrix(SBuff)
+
+    SBuffMatrix = Matrix(SBuff1)
     test_OneLoopAllocations(Par, WS, SBuff1, VBuff)
+    test_OneLoopAllocations(Par, WS, SBuffMatrix, VBuff)
+
     put!(WS.Buffer.Props, SBuff)
     put!(WS.Buffer.Vertex, VBuff)
 end
 function test_OneLoopAllocations(Par, WS, SProps, VBuff)
-    PMFRG.addX!(WS, 1, 1, 2, 2, SProps, VBuff) # compile functions
-    PMFRG.addXTilde!(WS, 1, 1, 2, 2, SProps) # compile functions
+    PMFRG.addX!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps, VBuff) # compile functions
+    PMFRG.addXTilde!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps) # compile functions
 
-    aX = @allocated PMFRG.addX!(WS, 1, 1, 2, 2, SProps, VBuff)
-    aXT = @allocated PMFRG.addXTilde!(WS, 1, 1, 2, 2, SProps)
+    aX = @allocated PMFRG.addX!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps, VBuff)
+    aXT = @allocated PMFRG.addXTilde!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps)
     test_TypeStability(Par, WS, aX, aXT)
 end
 
@@ -63,8 +67,11 @@ function test_TwoLoopAllocations(Par = Params(getPolymer(2), TwoLoop()))
     XB = take!(WS.Buffer.X)
 
     PropB = convertToSMatrix(PropB_0)
+    PropBMatrix = Matrix(PropB)
 
     test_TwoLoopAllocations(Par, WS, PropB, VB, XB)
+    test_TwoLoopAllocations(Par, WS, PropBMatrix, VB, XB)
+
     put!(WS.Buffer.Vertex, VB)
     put!(WS.Buffer.X, XB)
     put!(WS.Buffer.Props, PropB_0)

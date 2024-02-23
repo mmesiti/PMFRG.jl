@@ -6,16 +6,32 @@
 H = \sum_{ij} J_{ij} \vec{S}_i \cdot \vec{S}_j
 ```
 ## Installation
-It is advised to create a reproducible environment for each project, see also https://pkgdocs.julialang.org/v1/environments/ .
-`PMFRG.jl` is not in the official registry (yet?) and thus best installed via
+`PMFRG.jl` is not in the official registry (yet?) and thus best installed via installing the private registry "JuliaPMFRG":
 ```
-(@v1.8) pkg> activate TestProject
+(@v1.9) pkg> registry add https://github.com/NilsNiggemann/JuliaPMFRGRegistry.git
+```
+This only needs to be done once on every machine. Then, `PMFRG.jl`, its dependencies and other helper packages for evaluation can be installed conveniently via
+```
+(v1.9) pkg> add PMFRG
+```
+Note, that is advised to create a reproducible environment for each project, see also https://pkgdocs.julialang.org/v1/environments/ .
+
+<details>
+  <summary>Installation without local registry</summary>
+  
+If you do not want to use the private registry, you can also install the dependencies manually.
+
+```
+(@v1.9) pkg> activate TestProject
 Activating new project at `~/TestProject`
 
 (TestProject) pkg> add https://github.com/NilsNiggemann/SpinFRGLattices.jl.git
 (TestProject) pkg> add https://github.com/NilsNiggemann/PMFRG.jl.git
 ```
-Note that the dependency `SpinFRGLattices` needs to be added first for the package manager to resolve the correct version. 
+Note that in this case the dependency `SpinFRGLattices` needs to be added first for the package manager to resolve the correct version. 
+
+</details>
+
 ## Usage
 After the package is installed to a local environment it can be loaded in a Julia session with  `using PMFRG`. The following contains a minimal working example:
 ```
@@ -121,8 +137,8 @@ Lattice = LatticeInfo(System,SquareLattice)
 chi_ΛR = h5read(mainFile,"0.5/Chi")
 chi_R = chi_ΛR[:,end]
 
-chi = getFourier(chi_R,Lattice)
-
+chi = getNaiveLatticeFT(chi_R,Lattice)
+# or: chi = getLatticeFFT(chi_R, Lattice) to use FFT instead
 k = LinRange(-2pi,2pi,100)
 
 chik = [chi(x,y) for x in k, y in k]
@@ -130,10 +146,89 @@ chik = [chi(x,y) for x in k, y in k]
 heatmap(k,k,chik)
 
 ```
+
+### Notes
+- The object `chi = getNaiveLatticeFT(...)` corresponds to the average over all sublattices $\chi(\vec{k}) = \frac{1}{N_\textrm{Cell}} \sum_{a,b} \chi_{ab}(\vec{k})$. 
+- For lattices with more than one site per unit cell, one can also evaluate the correlations between sublattice 1 and 2 as `chi[1,2](kx,ky,kz)`. It is also possible to add two susceptibilities (before evaluating them at some momentum) such as `chi_new = chi[1,2] + chi[2,1]`.
+
+- If you are going to evaluate the Fourier transform in the whole Brillouin zone, it might be more efficient to use the Fast Fourier Transform (FFT) instead. This can be done by using `chi = getLatticeFFT(chi_R, Lattice)` instead. Note that continuous frequencies are here obtained by zero-padding the data which is less accurate than the naive method. The padding default can be changed for example to include at least $128$ sites in each direction as `chi = getLatticeFFT(chi_R, Lattice, 128)`.
+
+
 ## More Examples
 A more thorough set of examples is found in the `Examples` folder of this repository. For code reuse, the dependencies of [`PMFRGEvaluation`](`https://github.com/NilsNiggemann/PMFRGEvaluation.jl`) are split into several subdependencies. To try out the examples, activate the project environment with `]activate Example` and download all dependencies with `]instantiate`.
 
 It is a good practice to set up a new evaluation environment for each project. If you use the same environment for everything, you might not be able to reproduce plots you made a while ago, because the plotting package or the evaluation package may have changed.
+
+## MPI parallelization
+By default, the package uses `Threads` 
+to use all the cores of a single node of a HPC machine.
+In order to use more than one node,
+this package includes an [extension](https://pkgdocs.julialang.org/v1/creating-packages/#Conditional-loading-of-code-in-packages-(Extensions))
+that can use [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface)
+via the [MPI.jl wrapper](https://juliaparallel.org/MPI.jl/stable/).
+
+In order to activate the extension the following conditions are necessary:
+- the Julia version needs to be >= 1.9 (the package extension mechanism is not implemented in older versions)
+- the MPI package needs to be added to the active environment 
+Then, the Julia script can be launched using [`mpiexecjl`](https://juliaparallel.org/MPI.jl/stable/usage/#Julia-wrapper-for-mpiexec).
+
+An example of usage is in `ext/PMFRGMPIExt/test/MPITest/generate_data_example.mpi.jl`
+(only the Julia code is present:
+ideas for a wrapping slurm/shell script 
+can be taken from `Example/Slurm_example.jl`).
+Some notes:
+- It is necessary to initialize MPI at the beginning by calling `MPI.Init()`,
+  (and call `MPI.Finalize()` at the end).
+  If `MPI.Init()` is not called, the MPI processes will not be able to communicate.
+  The code will launch a warning in this case.
+- In order for the MPI version of the code to be called, 
+  please pass a `UseMPI()` singleton argument to the `SolveFRG` function
+  (see example below).
+- Any MPI launcher used will launch the same Julia script on different processes.
+  For this reason, it is important to make sure 
+  that either the output of the processes 
+  (in MPI terminology, *ranks*)
+  is written on different files (which should be identical),
+  or only one MPI process writes the outputs to file.
+  In the following code snippet,
+  only the master rank will write the output to disk:
+  
+  
+``` julia
+using MPI
+
+MPI.Init()
+rank = MPI.Comm_rank(MPI.COMM_WORLD)
+
+[...]
+
+if rank == 0
+    # specify a file name for main Output
+    mainFile = PMFRG.generateFileName(Par, "_testFile")
+    # specify path for vertex checkpoints
+    flowpath = "flows/"
+else
+    # disable file output for other ranks
+    mainFile = nothing
+    flowpath = nothing
+end
+
+
+Solution, saved_values = SolveFRG(
+    Par,
+    UseMPI(),
+    MainFile = mainFile,
+    CheckpointDirectory = flowpath,
+    method = DP5(),
+    VertexCheckpoints = [],
+    CheckPointSteps = 3,
+)
+
+
+MPI.Finalize()
+```
+
+   The output from all the ranks (e.g, the files in all the directories) should match.
 
 ## Implementing your own lattices
 Of course you will eventually have to implement lattices which are not included already, change the couplings, or even remove symmetries. As long as you feed a valid geometry struct from [`SpinFRGLattices.jl`](https://github.com/NilsNiggemann/SpinFRGLattices.jl) to the FRG code (which is quite minimalistic), it should not be necessary to make direct changes to the library. [`SpinFRGLattices.jl`](https://github.com/NilsNiggemann/SpinFRGLattices.jl)) contains mostly helper functions to make your life easier. Documentation of how to use it to implement new lattices is found soon in the repository.

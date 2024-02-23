@@ -4,9 +4,13 @@ includes Two-loop corrections to PMFRG.
 
 include("TwoLoopTypes.jl")
 
-function AllocateSetup(Par::TwoLoopParams)
+function AllocateSetup(
+    Par::TwoLoopParams,
+    ParallelizationScheme::AbstractParallelizationScheme = MultiThreaded(),
+)
+
     (; NUnique, Npairs) = Par.System
-    println("Two Loop: T= ", Par.NumericalParams.T)
+    Par.Options.MinimalOutput || println("Two Loop: T= ", Par.NumericalParams.T)
     ##Allocate Memory:
     X = BubbleType(Par)
     Y = BubbleType(Par)
@@ -18,7 +22,7 @@ function AllocateSetup(Par::TwoLoopParams)
     BubbleBuffers =
         getChannel([BubbleBufferType(floattype, Npairs) for _ = 1:Threads.nthreads()])
     Buffs = BufferTypeTwoLoop(PropsBuffers, VertexBuffers, BubbleBuffers)
-    return (X, Y, Buffs, Par)
+    return (; X, Y, Buffs, Par, ParallelizationScheme)
 end
 include("Buffers.jl")
 include("Bubbles.jl")
@@ -31,7 +35,7 @@ Params(System::Geometry, O::TwoLoop; kwargs...) =
 Solves FRG as specified for parameters
 """
 SolveFRG(Par::TwoLoopParams; kwargs...) =
-    launchPMFRG!(InitializeState(Par), AllocateSetup(Par), getDeriv!; kwargs...)
+    launchPMFRG!(InitializeState(Par), AllocateSetup(Par), getDerivTwoLoop!; kwargs...)
 
 generateFileName(Par::TwoLoopParams, Method::TwoLoop, arg::String = "") =
     _generateFileName(Par, "_l2" * arg)
