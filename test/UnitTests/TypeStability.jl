@@ -56,7 +56,7 @@ function test_TypeStability(Par, WS, aX, aXT)
 end
 
 function getEmptyWorkspace(Par::PMFRG.TwoLoopParams)
-    State = PMFRG.InitializeState(Par,MultiThreaded())
+    State = PMFRG.InitializeState(Par)
     Deriv = similar(State)
     setup = PMFRG.AllocateSetup(Par)
     (X, Y, Buffs, Par) = setup

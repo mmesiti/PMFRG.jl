@@ -6,7 +6,7 @@ function test_saving(
     FileDirectory = PMFRG.UniqueDirName(FileDirectory)
     mkpath(FileDirectory)
     Par = BenchmarkingParams(Method, GeometryGenerator(4))
-    State = PMFRG.InitializeState(Par, MultiThreaded())
+    State = PMFRG.InitializeState(Par)
     Lam = Par.NumericalParams.Lam_min + 0.01
     saved_values = PMFRG.SavedValues(Float64, PMFRG.Observables)
 

@@ -1,4 +1,4 @@
-function getDeriv!(Deriv, State, setup, Lam)
+function getDeriv!(Deriv::Vector, State::Vector, setup, Lam)
     @timeit_debug "getDeriv!" begin
         @timeit_debug "setup" (; X, Buffs, Par, StateBuff, DerivBuff) = setup #use pre-allocated X and XTilde to reduce garbage collector time
 

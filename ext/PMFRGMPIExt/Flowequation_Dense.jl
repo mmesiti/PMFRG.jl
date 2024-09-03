@@ -2,9 +2,6 @@ using PMFRG, MPI, TimerOutputs
 include("mpi/MPI_Detail.jl")
 import .MPI_Detail
 
-function PMFRG.getXBubble!(Workspace, Lam, ::Int64)
-
-end
 
 function PMFRG.getXBubble!(Workspace, Lam, ::PMFRG.UseMPI)
     (; X, Par) = Workspace
@@ -78,6 +75,16 @@ function PMFRG.getXBubble!(Workspace, Lam, ::PMFRG.UseMPI)
         end
     else
         @warn "MPI package used but not initialized" maxlog = 1
-        PMFRG.getXBubblePartition!(X, State, Deriv, Par, Buffer, Lam, 1:N, 1:N, 1:N)
+        PMFRG.getXBubblePartition!(
+            X,
+            Workspace.State,
+            Workspace.Deriv,
+            Par,
+            Workspace.Buffer,
+            Lam,
+            1:N,
+            1:N,
+            1:N,
+        )
     end
 end

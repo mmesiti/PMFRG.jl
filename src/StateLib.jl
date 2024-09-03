@@ -14,7 +14,7 @@ export getF_int,
     repackStateVector!
 
 
-function createStateVector(array_geometry::NamedTuple; floattype)
+function createStateVector(array_geometry::NamedTuple; floattype)::Vector
     zeros(
         floattype,
         array_geometry.NUnique + # f_int

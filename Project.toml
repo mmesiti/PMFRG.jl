@@ -21,12 +21,12 @@ MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 PencilArrays = "0e08944d-e94e-41b1-9406-dcf66b6a9d2e"
 
 [extensions]
-PMFRGMPIExt = ["MPI","PencilArrays"]
+PMFRGMPIExt = ["MPI", "PencilArrays"]
 
 [extras]
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 PencilArrays = "0e08944d-e94e-41b1-9406-dcf66b6a9d2e"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "MPI","PencilArrays"]
+test = ["Test", "MPI", "PencilArrays"]

@@ -39,7 +39,7 @@ SolveFRG(
     ParallelizationScheme::AbstractParallelizationScheme = MultiThreaded();
     kwargs...,
 ) = launchPMFRG!(
-    InitializeState(Par, ParallelizationScheme),
+    InitializeState(Par),
     AllocateSetup(Par),
     getDerivTwoLoop!;
     kwargs...,

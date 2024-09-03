@@ -2,7 +2,7 @@ Base.show(io::IO, f::Float64) = @printf(io, "%1.15f", f)
 ##
 _getFloatType(Par::PMFRGParams) = typeof(Par.NumericalParams.T)
 
-function InitializeState(Par::PMFRGParams, ::MultiThreaded)
+function InitializeState(Par::PMFRGParams)
     (; couplings) = Par.System
 
     floattype = _getFloatType(Par)
@@ -81,7 +81,7 @@ SolveFRG(
     ParallelizationScheme::AbstractParallelizationScheme = MultiThreaded();
     kwargs...,
 ) = launchPMFRG!(
-    InitializeState(Par, ParallelizationScheme),
+    InitializeState(Par),
     AllocateSetup(Par, ParallelizationScheme),
     getDeriv!;
     kwargs...,
@@ -167,8 +167,7 @@ function launchPMFRG!(
 
     t0 = Lam_to_t(Lam_max)
     tend = get_t_min(Lam_min)
-    Deriv_subst! = generateSubstituteDeriv(Deriv!)
-    problem = ODEProblem(Deriv_subst!, State, (t0, tend), setup)
+    problem = get_ODE_problem(State, t0, tend, setup, setup.ParallelizationScheme)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
     Par.Options.MinimalOutput || println("Starting solve")
     @timeit_debug "total solver" sol = solve(
@@ -323,4 +322,9 @@ gettMesh(Saveat, Lam_min, Lam_max) = Lam_to_t.(getLambdaMesh(Saveat, Lam_min, La
 
 function getLambdaMesh(Saveat::Vector{Float64}, Lam_min, Lam_max)
     return unique(push!(Saveat, Lam_max)) # make sure that there is at least one element at beginning of code
+end
+
+function get_ODE_problem(State,t0,tend,setup,::MultiThreaded)
+    Deriv_subst! = generateSubstituteDeriv(Deriv!)
+    ODEProblem(Deriv_subst!, State, (t0, tend), setup)
 end
