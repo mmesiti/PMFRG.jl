@@ -31,4 +31,4 @@ test = ["Test", "MPI"]
 
 [compat]
 DiffEqCallbacks = '3.9.1'
-SciMLBase = '2.54.0'
+
