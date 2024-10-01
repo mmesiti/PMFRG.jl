@@ -27,5 +27,5 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 test = ["Test", "MPI"]
 
 [compat]
-DiffEqCallbacks = '3.9.1'
-SciMLBase = '2.53.1'
+DiffEqCallbacks = '=3.9.1'
+SciMLBase = '=2.53.1'
