@@ -89,37 +89,16 @@ SolveFRG(
     kwargs...,
 )
 
-function launchPMFRG!(
-    State,
-    setup,
-    Deriv!::Function;
-    MainFile = nothing,
-    Group = DefaultGroup(setup.Par),
-    CheckpointDirectory = nothing,
-    method = DP5(),
-    MaxVal = Inf,
-    ObsSaveat = nothing,
-    VertexCheckpoints = [],
-    overwrite_Checkpoints = false::Bool,
-    CheckPointSteps = 1,
-    ObservableType = Observables,
-    kwargs...,
+function _get_output_callback(
+    CheckPointSteps,
+    CheckpointDirectory,
+    saved_values,
+    Par,
+    VertexCheckpoints,
 )
-
-    Par = setup.Par
-
-    typeof(CheckpointDirectory) == String && (
-        CheckpointDirectory =
-            setupDirectory(CheckpointDirectory, Par, overwrite = overwrite_Checkpoints)
-    )
-
-    (; Lam_max, Lam_min, accuracy) = Par.NumericalParams
-    save_func(State, t, integrator) =
-        getObservables(ObservableType, State, t_to_Lam(t), Par)
-
-    saved_values = SavedValues(eltype(State), ObservableType)
-    i = 0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
-
+    # count number of outputs = number of steps.
+    # CheckPointSteps gives the intervals in which checkpoints should be saved.
+    i = 0
     function bareOutput(State, t, integrator)
         @timeit_debug "bareOutput" begin
             Lam = t_to_Lam(t)
@@ -153,9 +132,23 @@ function launchPMFRG!(
         end
     end
     output_func = getOutputfunction(Par.Options.MinimalOutput)
-    sort!(VertexCheckpoints)
+    outputCB = FunctionCallingCallback(output_func, tdir = -1, func_start = false)
+    return outputCB
+end
+
+
+function _get_saving_callback(
+    ObservableType,
+    Par,
+    ObsSaveat,
+    Lam_min,
+    Lam_max,
+    saved_values,
+)
     #get Default for lambda range for observables
     # ObsSaveat = getLambdaMesh(ObsSaveat,Lam_min,Lam_max)
+    save_func(State, t, integrator) =
+        getObservables(ObservableType, State, t_to_Lam(t), Par)
     ObsSaveat = gettMesh(ObsSaveat, Lam_min, Lam_max)
     saveCB = SavingCallback(
         save_func,
@@ -164,27 +157,73 @@ function launchPMFRG!(
         saveat = ObsSaveat,
         tdir = -1,
     )
-    outputCB = FunctionCallingCallback(output_func, tdir = -1, func_start = false)
-    unstable_check(dt, u, p, t) = maximum(abs, u) > MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
+    return saveCB
+end
 
+function _get_problem(Lam_max, Lam_min, State, setup, Deriv!)
     t0 = Lam_to_t(Lam_max)
     tend = get_t_min(Lam_min)
     Deriv_subst! = generateSubstituteDeriv(Deriv!)
     problem = ODEProblem(Deriv_subst!, State, (t0, tend), setup)
+    return problem
+end
+
+
+function launchPMFRG!(
+    State,
+    setup,
+    Deriv!::Function;
+    MainFile = nothing,
+    Group = DefaultGroup(setup.Par),
+    CheckpointDirectory::Union{String,Nothing} = nothing,
+    method = DP5(),
+    MaxVal = Inf,
+    ObsSaveat = nothing,
+    VertexCheckpoints = [],
+    overwrite_Checkpoints = false::Bool,
+    CheckPointSteps = 1,
+    ObservableType = Observables,
+    kwargs...,
+)
+
+    sort!(VertexCheckpoints)
+
+    CheckpointDirectory =
+        setupDirectory(CheckpointDirectory, setup.Par, overwrite = overwrite_Checkpoints)
+
+    (; Lam_max, Lam_min, accuracy) = setup.Par.NumericalParams
+    saved_values = SavedValues(eltype(State), ObservableType)
+
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
-    Par.Options.MinimalOutput || println("Starting solve")
+    setup.Par.Options.MinimalOutput || println("Starting solve")
     @timeit_debug "total solver" sol = solve(
-        problem,
+        _get_problem(Lam_max, Lam_min, State, setup, Deriv!),
         method,
         reltol = accuracy,
         abstol = accuracy,
         save_everystep = false,
-        callback = CallbackSet(saveCB, outputCB),
+        callback = CallbackSet(
+            _get_saving_callback(
+                ObservableType,
+                setup.Par,
+                ObsSaveat,
+                Lam_min,
+                Lam_max,
+                saved_values,
+            ),
+            _get_output_callback(
+                CheckPointSteps,
+                CheckpointDirectory,
+                saved_values,
+                setup.Par,
+                VertexCheckpoints,
+            ),
+        ),
         dt = Lam_to_t(0.2 * Lam_max),
-        unstable_check = unstable_check;
+        unstable_check = (dt, u, p, t) -> maximum(abs, u) > MaxVal, # returns true -> Interrupts ODE integration if vertex gets too big
         kwargs...,
     )
-    if !Par.Options.MinimalOutput
+    if !setup.Par.Options.MinimalOutput
         println(sol.stats)
     end
     saved_values.t .= t_to_Lam.(saved_values.t)
@@ -193,9 +232,9 @@ function launchPMFRG!(
         sol.u[end],
         saved_values,
         t_to_Lam(sol.t[end]),
-        Par,
+        setup.Par,
     )
-    saveMainOutput(MainFile, sol, saved_values, Par, Group)
+    saveMainOutput(MainFile, sol, saved_values, setup.Par, Group)
 
     SetCompletionCheckmark(CheckpointDirectory)
     return sol, saved_values
