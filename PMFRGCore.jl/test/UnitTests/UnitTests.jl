@@ -1,6 +1,7 @@
 using PMFRGCore, SpinFRGLattices, Test
 
 include("StateLib.jl")
+include("GetXBubbleLoadBalancing.jl")
 include("DimerTest.jl")
 
 include("FunctionCompatTests.jl")
