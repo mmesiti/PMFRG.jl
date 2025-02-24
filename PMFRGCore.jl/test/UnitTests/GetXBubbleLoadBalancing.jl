@@ -1,5 +1,6 @@
 include("../../src/GetXBubbleLoadBalancing.jl")
 
+
 function getGetXBubblePartitionWorkloadInSingleIndexRange(
     isrange,
     itrange,
@@ -55,19 +56,19 @@ function testGetXBubbleLoadBalancing()
     end
 
     @testset "All indices covered, once" begin
-        isrange = 5:11
-        itrange = 6:11
-        iurange = 5:11
 
-        nthreads = 5
-        singleindexranges = getSingleindexranges(isrange, itrange, iurange, nthreads)
-        @test length(singleindexranges) == nthreads
 
-        @testset for i = 1:length(isrange)*length(itrange)
-            @test sum(i in r for r in singleindexranges) == 1
+        @testset for (isrange, itrange, iurange, nthreads) in
+                     [(5:11, 6:11, 5:11, 5), (1:5, 1:5, 1:5, 32)]
+
+            singleindexranges = getSingleindexranges(isrange, itrange, iurange, nthreads)
+            @test length(singleindexranges) == nthreads
+
+            @testset for i = 1:length(isrange)*length(itrange)
+                @test sum(i in r for r in singleindexranges) == 1
+            end
         end
     end
-
     @testset "load is balanced" begin
         isrange = 1:11
         itrange = 1:11

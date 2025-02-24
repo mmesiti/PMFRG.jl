@@ -7,10 +7,11 @@ include("../ext/PMFRGCoreMPIExt/test/MPITest/mpi-tests.jl")
 include("RegressionTests/PMFRGCore.getXBubble.jl")
 
 @testset verbose = true "PMFRGCore tests" begin
+    testGetXBubbleLoadBalancing()
+    test_getXBubble()
     smoketest_function_compatibilities()
     testStateUnpacking()
     test_mpi_core()
-    test_getXBubble()
     testOneLoopCore(Obsacc)
     testTwoLoopCore(Obsacc)
     testParquetCore()
