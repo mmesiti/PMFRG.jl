@@ -53,7 +53,7 @@ function norm(A)
 end
 
 function Threadsfill!(Tensor::AbstractArray, val)
-    Threads.@threads for i in eachindex(Tensor)
+    Threads.@threads :static for i in eachindex(Tensor)
         Tensor[i] = val
     end
 end

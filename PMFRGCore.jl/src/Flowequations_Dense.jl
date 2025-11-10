@@ -63,7 +63,7 @@ function addTo1PartBubble!(Dgamma::AbstractArray, XT1_::Function, XT2_::Function
     (; T, N, Ngamma, lenIntw_acc, np_vec_gamma) = Par.NumericalParams
     (; siteSum, invpairs, Nsum, OnsitePairs) = Par.System
 
-    Threads.@threads for iw1 = 1:Ngamma
+    Threads.@threads :static for iw1 = 1:Ngamma
         nw1 = np_vec_gamma[iw1]
         for (x, Rx) in enumerate(OnsitePairs)
             for nw = -lenIntw_acc:lenIntw_acc-1
@@ -157,10 +157,10 @@ function getXBubblePartition!(
         end
         return SMatrix(BubbleProp)
     end
-    Threads.@threads for (is, itlow, ithigh) in collect((is, itlow, ithigh)
-                                                                for is in isrange,
-                                                                (itlow, ithigh) in zip(itrange, reverse(itrange))
-                                                                if itlow <= ithigh)
+    Threads.@threads :static for (is, itlow, ithigh) in collect(
+        (is, itlow, ithigh) for
+        is in isrange, (itlow, ithigh) in zip(itrange, reverse(itrange)) if itlow <= ithigh
+    )
         BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
         Buffer = take!(VertexBuffers)
         ns = np_vec[is]
@@ -501,7 +501,7 @@ function symmetrizeBubble!(X::BubbleType, Par::PMFRGParams)
     usesymmetry = Par.Options.usesymmetry
     # use the u <--> t symmetry
     if (usesymmetry)
-        Threads.@threads for it = 1:N
+        Threads.@threads :static for it = 1:N
             for iu = it+1:N, is = 1:N, Rij = 1:Npairs
                 X.a[Rij, is, it, iu] = -X.a[Rij, is, iu, it]
                 X.b[Rij, is, it, iu] = -X.b[Rij, is, iu, it]
@@ -511,7 +511,7 @@ function symmetrizeBubble!(X::BubbleType, Par::PMFRGParams)
         end
     end
     #local definitions of X.Tilde vertices
-    Threads.@threads for iu = 1:N
+    Threads.@threads :static for iu = 1:N
         for it = 1:N, is = 1:N, R in OnsitePairs
             X.Ta[R, is, it, iu] = X.a[R, is, it, iu]
             X.Tb[R, is, it, iu] = X.b[R, is, it, iu]
@@ -523,7 +523,7 @@ function symmetrizeBubble!(X::BubbleType, Par::PMFRGParams)
 end
 
 function addToVertexFromBubble!(Γ::VertexType, X::BubbleType)
-    Threads.@threads for iu in axes(Γ.a, 4)
+    Threads.@threads :static for iu in axes(Γ.a, 4)
         for it in axes(Γ.a, 3), is in axes(Γ.a, 2), Rij in axes(Γ.a, 1)
             Γ.a[Rij, is, it, iu] +=
                 X.a[Rij, is, it, iu] - X.Ta[Rij, it, is, iu] + X.Ta[Rij, iu, is, it]
@@ -539,7 +539,7 @@ end
 
 function symmetrizeVertex!(Γ::VertexType, Par)
     N = Par.NumericalParams.N
-    Threads.@threads for iu = 1:N
+    Threads.@threads :static for iu = 1:N
         for it = 1:N, is = 1:N, R in Par.System.OnsitePairs
             Γ.c[R, is, it, iu] = -Γ.b[R, it, is, iu]
         end
@@ -570,7 +570,7 @@ function getChi(gamma::AbstractArray, Γc::AbstractArray, Lam::Real, Par::PMFRGP
 
     Chi = zeros(_getFloatType(Par), Npairs, N)
 
-    @inbounds Threads.@threads for Rij = 1:Npairs
+    @inbounds Threads.@threads :static for Rij = 1:Npairs
         (; xi, xj) = PairTypes[Rij]
         for i_nu = 1:Numax
             n_nu = np_vec[i_nu]
@@ -601,7 +601,7 @@ function getChi(gamma::AbstractArray, Γc::AbstractArray, Lam::Real, Par::PMFRGP
 
     Chi = zeros(_getFloatType(Par), Npairs)
 
-    @inbounds Threads.@threads for Rij = 1:Npairs
+    @inbounds Threads.@threads :static for Rij = 1:Npairs
         (; xi, xj) = PairTypes[Rij]
         for nK = -lenIntw_acc:lenIntw_acc-1
             if Rij in OnsitePairs
