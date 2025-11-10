@@ -88,7 +88,7 @@ function getXFromBubbles!(X::BubbleType, B0::BubbleType, BX::BubbleType)
     for f in fieldnames(BubbleType)
         Xf, B0f, BXf = getfield(X, f), getfield(B0, f), getfield(BX, f)
 
-        Threads.@threads for i in eachindex(Xf, B0f, BXf)
+        Threads.@threads :static for i in eachindex(Xf, B0f, BXf)
             Xf[i] = 0.5 * B0f[i] + BXf[i]
         end
     end
@@ -96,7 +96,7 @@ function getXFromBubbles!(X::BubbleType, B0::BubbleType, BX::BubbleType)
 end
 
 function getVertexFromChannels!(Γ::VertexType, I::VertexType, X::BubbleType)
-    Threads.@threads for iu in axes(Γ.a, 4)
+    Threads.@threads :static for iu in axes(Γ.a, 4)
         for it in axes(Γ.a, 3), is in axes(Γ.a, 2), Rij in axes(Γ.a, 1)
             Γ.a[Rij, is, it, iu] =
                 I.a[Rij, is, it, iu] + X.a[Rij, is, it, iu] - X.Ta[Rij, it, is, iu] +

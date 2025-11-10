@@ -450,7 +450,7 @@ function compute1PartBubble_BS!(Dgamma::AbstractArray, Γ, Gamma0, Prop, Par)
     @inline Γc_(Rij, s, t, u) = V_(Γ.c, Rij, s, t, u, invpairs[Rij], Par.NumericalParams.N) # cTilde corresponds to b type vertex!
 
 
-    Threads.@threads for iw1 = 1:Ngamma
+    Threads.@threads :static for iw1 = 1:Ngamma
         nw1 = np_vec_gamma[iw1]
         for (x, Rx) in enumerate(OnsitePairs)
             jsum = 0.0
