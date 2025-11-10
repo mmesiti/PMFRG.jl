@@ -165,12 +165,34 @@ function getXBubblePartition!(
         end
         return SMatrix(BubbleProp)
     end
-    @sync begin
-        for is in isrange, it in itrange
-            Threads.@spawn begin
-                BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
-                Buffer = take!(VertexBuffers)
-                ns = np_vec[is]
+    Threads.@threads for (is, itlow, ithigh) in collect((is, itlow, ithigh)
+                                                                for is in isrange,
+                                                                (itlow, ithigh) in zip(itrange, reverse(itrange))
+                                                                if itlow <= ithigh)
+        BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
+        Buffer = take!(VertexBuffers)
+        ns = np_vec[is]
+
+        let it = itlow
+            nt = np_vec[it]
+            # Workspace.X.a .= Buffer.Va12[begin]
+            for nw = -lenIntw:lenIntw-1 # Matsubara sum
+                sprop = getKataninProp!(BubbleProp, nw, nw + ns)
+                for iu in iurange
+                    nu = np_vec[iu]
+                    if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
+                        continue
+                    end
+                    addXTilde!(X, State, Par, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
+                    if (!Par.Options.usesymmetry || nu <= nt)
+                        addX!(X, State, Par, is, it, iu, nw, sprop, Buffer)# add to X-type bubble functions
+                    end
+                end
+            end
+        end
+
+        if (ithigh > itlow)
+            let it = ithigh
                 nt = np_vec[it]
                 # Workspace.X.a .= Buffer.Va12[begin]
                 for nw = -lenIntw:lenIntw-1 # Matsubara sum
@@ -186,14 +208,14 @@ function getXBubblePartition!(
                         end
                     end
                 end
-                put!(PropsBuffers, BubbleProp)
-                put!(VertexBuffers, Buffer)
             end
         end
+
+
+        put!(PropsBuffers, BubbleProp)
+        put!(VertexBuffers, Buffer)
     end
-
 end
-
 
 @inline function mixedFrequencies(ns, nt, nu, nwpr)
     nw1 = Int((ns + nt + nu - 1) / 2)
