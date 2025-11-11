@@ -17,6 +17,8 @@ jobs:
         with:
           lfs: 'true'
       - uses: julia-actions/setup-julia@v1
+        with:
+          version: '1.10'
       - name: Install dependencies and Test - PMFRGCore.jl
         run: |
           export JULIA_PKG_PRECOMPILE_AUTO=0
