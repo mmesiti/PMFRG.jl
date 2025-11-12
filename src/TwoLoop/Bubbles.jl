@@ -458,8 +458,8 @@ function compute1PartBubble_BS!(Dgamma::AbstractArray, Γ, Gamma0, Prop, Par)
                 (; m, ki, xk) = siteSum[k_spl, Rx]
                 ik = invpairs[ki]
                 fac = ifelse(ik in OnsitePairs, 1, 3)
-                for nw = -lenIntw_acc:lenIntw_acc-1
-                    for nwpr = -lenIntw_acc:lenIntw_acc-1
+                for nw = (-lenIntw_acc):(lenIntw_acc-1)
+                    for nwpr = (-lenIntw_acc):(lenIntw_acc-1)
 
                         wpwpr = nw + nwpr + 1
                         w1mw = nw1 - nw

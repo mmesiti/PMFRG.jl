@@ -23,9 +23,9 @@ isrange = 1:N
 
 function ranges_per_rank(root)
     itidx = floor(Int, root / 2)
-    itrange = Int(N / 2 * itidx + 1):Int(N / 2 * (itidx + 1))
+    itrange = Int(N/2*itidx+1):Int(N/2*(itidx+1))
     iuidx = root % 2
-    iurange = Int(N / 2 * iuidx + 1):Int(N / 2 * (iuidx + 1))
+    iurange = Int(N/2*iuidx+1):Int(N/2*(iuidx+1))
     itrange, iurange
 end
 

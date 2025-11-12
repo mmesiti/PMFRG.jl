@@ -61,8 +61,8 @@ function NumericalParams(;
     Lam_max::AbstractFloat = exp(10.0),
     lenIntw::Int = N,
     lenIntw_acc::Int = 2 * maximum((N, Ngamma, lenIntw)), # more accurate for less demanding sums
-    np_vec::Array{Int,1} = collect(0:N-1),
-    np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1),
+    np_vec::Array{Int,1} = collect(0:(N-1)),
+    np_vec_gamma::Array{Int,1} = collect(0:(Ngamma-1)),
     ex_freq = (2 * N - 1) * pi * T,
     kwargs...,
 )
