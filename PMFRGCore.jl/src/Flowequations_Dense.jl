@@ -55,7 +55,7 @@ function getDFint!(Workspace::PMFRGWorkspace, Lam::Real)
 
     for x = 1:NUnique
         sumres = 0.0
-        for nw = -lenIntw_acc:lenIntw_acc-1
+        for nw = (-lenIntw_acc):(lenIntw_acc-1)
             w = get_w(nw, T)
             sumres += iS(x, nw) / iG(x, nw) * Theta(Lam, w) * γ(x, nw) / w
         end
@@ -74,7 +74,7 @@ function addTo1PartBubble!(Dgamma::AbstractArray, XT1_::Function, XT2_::Function
     Threads.@threads :static for iw1 = 1:Ngamma
         nw1 = np_vec_gamma[iw1]
         for (x, Rx) in enumerate(OnsitePairs)
-            for nw = -lenIntw_acc:lenIntw_acc-1
+            for nw = (-lenIntw_acc):(lenIntw_acc-1)
                 jsum = 0.0
                 wpw1 = nw1 + nw + 1 #w + w1: Adding two fermionic Matsubara frequencies gives a +1 for the bosonic index
                 wmw1 = nw - nw1
@@ -176,7 +176,7 @@ function getXBubblePartition!(
         let it = itlow
             nt = np_vec[it]
             # Workspace.X.a .= Buffer.Va12[begin]
-            for nw = -lenIntw:lenIntw-1 # Matsubara sum
+            for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
                 sprop = getKataninProp!(BubbleProp, nw, nw + ns)
                 for iu in iurange
                     nu = np_vec[iu]
@@ -195,7 +195,7 @@ function getXBubblePartition!(
             let it = ithigh
                 nt = np_vec[it]
                 # Workspace.X.a .= Buffer.Va12[begin]
-                for nw = -lenIntw:lenIntw-1 # Matsubara sum
+                for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
                     sprop = getKataninProp!(BubbleProp, nw, nw + ns)
                     for iu in iurange
                         nu = np_vec[iu]
@@ -510,7 +510,7 @@ function symmetrizeBubble!(X::BubbleType, Par::PMFRGParams)
     # use the u <--> t symmetry
     if (usesymmetry)
         Threads.@threads :static for it = 1:N
-            for iu = it+1:N, is = 1:N, Rij = 1:Npairs
+            for iu = (it+1):N, is = 1:N, Rij = 1:Npairs
                 X.a[Rij, is, it, iu] = -X.a[Rij, is, iu, it]
                 X.b[Rij, is, it, iu] = -X.b[Rij, is, iu, it]
                 X.c[Rij, is, it, iu] =
@@ -583,11 +583,11 @@ function getChi(gamma::AbstractArray, Γc::AbstractArray, Lam::Real, Par::PMFRGP
         for i_nu = 1:Numax
             n_nu = np_vec[i_nu]
 
-            for nK = -lenIntw_acc:lenIntw_acc-1
+            for nK = (-lenIntw_acc):(lenIntw_acc-1)
                 if Rij in OnsitePairs
                     Chi[Rij, i_nu] += T * iG(xi, nK) * iG(xi, nK + n_nu)
                 end
-                for nK2 = -lenIntw_acc:lenIntw_acc-1
+                for nK2 = (-lenIntw_acc):(lenIntw_acc-1)
                     npwpw2 = n_nu + nK + nK2 + 1
                     wmw2 = nK - nK2
                     #use that Vc_0 is calculated from Vb
@@ -611,11 +611,11 @@ function getChi(gamma::AbstractArray, Γc::AbstractArray, Lam::Real, Par::PMFRGP
 
     @inbounds Threads.@threads :static for Rij = 1:Npairs
         (; xi, xj) = PairTypes[Rij]
-        for nK = -lenIntw_acc:lenIntw_acc-1
+        for nK = (-lenIntw_acc):(lenIntw_acc-1)
             if Rij in OnsitePairs
                 Chi[Rij, 1] += T * iG(xi, nK)^2
             end
-            for nK2 = -lenIntw_acc:lenIntw_acc-1
+            for nK2 = (-lenIntw_acc):(lenIntw_acc-1)
                 npwpw2 = nK + nK2 + 1
                 wmw2 = nK - nK2
                 #use that Vc_0 is calculated from Vb

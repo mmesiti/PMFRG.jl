@@ -18,7 +18,7 @@ function saveState(
     try
         h5open(Filename, mode) do f
             for (Name, V) in zip(Names, Vertices)
-                f["$Name", blosc = 9] = Array(V)
+                f["$Name", blosc=9] = Array(V)
             end
         end
         h5write(Filename, "Lam", Lam)
@@ -138,7 +138,7 @@ file_extension_pos(file::String) = findlast('.', file)
 function file_extension(file::String)
     pos = file_extension_pos(file)
     pos === nothing && return nothing
-    return file[pos+1:end]
+    return file[(pos+1):end]
 end
 
 function getVersionNumber(Path)
@@ -149,10 +149,10 @@ function getVersionNumber(Path)
         it_1 = last(it)
         brackindex = findlast(')', Path)
         try
-            return parse(Int, Path[it_1+1:brackindex-1])
+            return parse(Int, Path[(it_1+1):(brackindex-1)])
 
         catch e
-            println(Path, Path[it_1+1:brackindex-1])
+            println(Path, Path[(it_1+1):(brackindex-1)])
             throw(e)
         end
     end

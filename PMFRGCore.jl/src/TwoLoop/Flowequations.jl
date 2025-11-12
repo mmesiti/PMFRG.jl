@@ -62,7 +62,7 @@ function addTo2PartBubble!(
                 XBuffer = take!(Buffer.X)
                 ns = np_vec[is]
                 nt = np_vec[it]
-                for nw = -lenIntw:lenIntw-1 # Matsubara sum
+                for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
                     sprop = getProp!(BubbleProp, nw, nw + ns)
                     for iu = 1:N
                         nu = np_vec[iu]
