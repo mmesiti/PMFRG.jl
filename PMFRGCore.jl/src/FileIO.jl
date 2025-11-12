@@ -18,7 +18,7 @@ function saveState(
     try
         h5open(Filename, mode) do f
             for (Name, V) in zip(Names, Vertices)
-                f["$Name", blosc=9] = Array(V)
+                f["$Name", blosc = 9] = Array(V)
             end
         end
         h5write(Filename, "Lam", Lam)
