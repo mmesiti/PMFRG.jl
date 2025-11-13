@@ -12,7 +12,7 @@ function saveState(Filename::String, State::ArrayPartition, Lam, mode = "cw")
     try
         h5open(Filename, mode) do f
             for (Name, V) in zip(Names, Vertices)
-                f["$Name", blosc=9] = V
+                f["$Name", blosc = 9] = V
             end
         end
         h5write(Filename, "Lam", Lam)
