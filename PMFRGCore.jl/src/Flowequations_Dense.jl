@@ -180,58 +180,40 @@ function getXBubblePartition!(
         end
     end
 
-    if iseven(length(itrange))
-        Threads.@threads :static for (is, itlow, ithigh) in collect(
-            (is, itlow, ithigh) for
-            is in isrange, (itlow, ithigh) in zip(itrange, reverse(itrange)) if
-            itlow < ithigh
-        )
-            BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
-            Buffer = take!(VertexBuffers)
-            ns = np_vec[is]
+    Threads.@threads :static for (is, it_iteration) in collect(
+        (is, it) for is in isrange, it = 1:div(length(itrange), 2, RoundUp)
+    )
 
+        BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
+        Buffer = take!(VertexBuffers)
+        ns = np_vec[is]
+
+
+        if isodd(length(itrange)) && it_iteration == 1
+            for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
+                sprop = getKataninProp!(BubbleProp, nw, nw + ns)
+                single_it_iteration(itrange[end], sprop, nw, is, Buffer, ns)
+            end
+        else
+            if isodd(length(itrange))
+                it_pair_iteration = it_iteration - 1
+                itlow = itrange[it_pair_iteration]
+                ithigh = itrange[end-it_pair_iteration]
+            else
+                it_pair_iteration = it_iteration
+                itlow = itrange[it_pair_iteration]
+                ithigh = itrange[end-(it_pair_iteration-1)]
+            end
 
             for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
                 sprop = getKataninProp!(BubbleProp, nw, nw + ns)
-
                 single_it_iteration(itlow, sprop, nw, is, Buffer, ns)
                 single_it_iteration(ithigh, sprop, nw, is, Buffer, ns)
             end
-
-            put!(PropsBuffers, BubbleProp)
-            put!(VertexBuffers, Buffer)
         end
-    else
-        Threads.@threads :static for (is, it_iteration) in collect(
-            (is, it) for is in isrange, it = 1:div(length(itrange), 2, RoundUp)
-        )
 
-            BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
-            Buffer = take!(VertexBuffers)
-            ns = np_vec[is]
-
-
-            if it_iteration == 1
-                for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
-                    sprop = getKataninProp!(BubbleProp, nw, nw + ns)
-                    single_it_iteration(itrange[end], sprop, nw, is, Buffer, ns)
-                end
-            else
-                it_pair_iteration = it_iteration - 1
-
-                itlow = itrange[it_pair_iteration]
-                ithigh = itrange[end-1-(it_pair_iteration-1)]
-
-                for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
-                    sprop = getKataninProp!(BubbleProp, nw, nw + ns)
-                    single_it_iteration(itlow, sprop, nw, is, Buffer, ns)
-                    single_it_iteration(ithigh, sprop, nw, is, Buffer, ns)
-                end
-            end
-
-            put!(PropsBuffers, BubbleProp)
-            put!(VertexBuffers, Buffer)
-        end
+        put!(PropsBuffers, BubbleProp)
+        put!(VertexBuffers, Buffer)
     end
 
 end
