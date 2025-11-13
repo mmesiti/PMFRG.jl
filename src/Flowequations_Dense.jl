@@ -145,52 +145,74 @@ function getXBubblePartition!(
         return SMatrix(BubbleProp)
     end
 
-    Threads.@threads :static for (is, itlow, ithigh) in collect(
-        (is, itlow, ithigh) for
-        is in isrange, (itlow, ithigh) in zip(itrange, reverse(itrange)) if itlow <= ithigh
-    )
-        BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
-        Buffer = take!(VertexBuffers)
-        ns = np_vec[is]
-
-
-        for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
-            sprop = getKataninProp!(BubbleProp, nw, nw + ns)
-
-            let it = itlow
-                nt = np_vec[it]
-                for iu in iurange
-                    nu = np_vec[iu]
-                    if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
-                        continue
-                    end
-                    addXTilde!(X, State, Par, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
-                    if (!Par.Options.usesymmetry || nu <= nt)
-                        addX!(X, State, Par, is, it, iu, nw, sprop, Buffer)# add to X-type bubble functions
-                    end
-                end
+    function single_it_iteration(it, sprop, nw, is, Buffer, ns)
+        nt = np_vec[it]
+        for iu in iurange
+            nu = np_vec[iu]
+            if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
+                continue
             end
-
-            if (ithigh > itlow)
-                let it = ithigh
-                    nt = np_vec[it]
-                    for iu in iurange
-                        nu = np_vec[iu]
-                        if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
-                            continue
-                        end
-                        addXTilde!(X, State, Par, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
-                        if (!Par.Options.usesymmetry || nu <= nt)
-                            addX!(X, State, Par, is, it, iu, nw, sprop, Buffer)# add to X-type bubble functions
-                        end
-                    end
-                end
+            addXTilde!(X, State, Par, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
+            if (!Par.Options.usesymmetry || nu <= nt)
+                addX!(X, State, Par, is, it, iu, nw, sprop, Buffer)# add to X-type bubble functions
             end
         end
-
-        put!(PropsBuffers, BubbleProp)
-        put!(VertexBuffers, Buffer)
     end
+
+    if iseven(length(itrange))
+        Threads.@threads :static for (is, itlow, ithigh) in collect(
+            (is, itlow, ithigh) for
+            is in isrange, (itlow, ithigh) in zip(itrange, reverse(itrange)) if
+            itlow < ithigh
+        )
+            BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
+            Buffer = take!(VertexBuffers)
+            ns = np_vec[is]
+
+
+            for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
+                sprop = getKataninProp!(BubbleProp, nw, nw + ns)
+
+                single_it_iteration(itlow, sprop, nw, is, Buffer, ns)
+                single_it_iteration(ithigh, sprop, nw, is, Buffer, ns)
+            end
+
+            put!(PropsBuffers, BubbleProp)
+            put!(VertexBuffers, Buffer)
+        end
+    else
+        Threads.@threads :static for (is, it_iteration) in collect(
+            (is, it) for is in isrange, it = 1:div(length(itrange), 2, RoundUp)
+        )
+
+            BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
+            Buffer = take!(VertexBuffers)
+            ns = np_vec[is]
+
+
+            if it_iteration == 1
+                for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
+                    sprop = getKataninProp!(BubbleProp, nw, nw + ns)
+                    single_it_iteration(itrange[end], sprop, nw, is, Buffer, ns)
+                end
+            else
+                it_pair_iteration = it_iteration - 1
+
+                itlow = itrange[it_pair_iteration]
+                ithigh = itrange[end-1-(it_pair_iteration-1)]
+
+                for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
+                    sprop = getKataninProp!(BubbleProp, nw, nw + ns)
+                    single_it_iteration(itlow, sprop, nw, is, Buffer, ns)
+                    single_it_iteration(ithigh, sprop, nw, is, Buffer, ns)
+                end
+            end
+
+            put!(PropsBuffers, BubbleProp)
+            put!(VertexBuffers, Buffer)
+        end
+    end
+
 end
 
 @inline function mixedFrequencies(ns, nt, nu, nwpr)
