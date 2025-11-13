@@ -144,6 +144,7 @@ function getXBubblePartition!(
         end
         return SMatrix(BubbleProp)
     end
+
     Threads.@threads :static for (is, itlow, ithigh) in collect(
         (is, itlow, ithigh) for
         is in isrange, (itlow, ithigh) in zip(itrange, reverse(itrange)) if itlow <= ithigh
@@ -152,11 +153,12 @@ function getXBubblePartition!(
         Buffer = take!(VertexBuffers)
         ns = np_vec[is]
 
-        let it = itlow
-            nt = np_vec[it]
-            # Workspace.X.a .= Buffer.Va12[begin]
-            for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
-                sprop = getKataninProp!(BubbleProp, nw, nw + ns)
+
+        for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
+            sprop = getKataninProp!(BubbleProp, nw, nw + ns)
+
+            let it = itlow
+                nt = np_vec[it]
                 for iu in iurange
                     nu = np_vec[iu]
                     if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
@@ -168,14 +170,10 @@ function getXBubblePartition!(
                     end
                 end
             end
-        end
 
-        if (ithigh > itlow)
-            let it = ithigh
-                nt = np_vec[it]
-                # Workspace.X.a .= Buffer.Va12[begin]
-                for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
-                    sprop = getKataninProp!(BubbleProp, nw, nw + ns)
+            if (ithigh > itlow)
+                let it = ithigh
+                    nt = np_vec[it]
                     for iu in iurange
                         nu = np_vec[iu]
                         if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
@@ -189,7 +187,6 @@ function getXBubblePartition!(
                 end
             end
         end
-
 
         put!(PropsBuffers, BubbleProp)
         put!(VertexBuffers, Buffer)
@@ -254,7 +251,7 @@ function addX!(
         Xb_sum = 0.0
         Xc_sum = 0.0
         @turbo unroll = 1 for k_spl = 1:Nsum[Rij]
-            #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
+            #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort!
             ki, kj, m, xk =
                 S_ki[k_spl, Rij], S_kj[k_spl, Rij], S_m[k_spl, Rij], S_xk[k_spl, Rij]
             Ptm = Props[xk, xk] * m
@@ -463,7 +460,7 @@ end
         Xb_sum = zero(T)
         Xc_sum = zero(T)
         @turbo unroll = 1 for k_spl = 1:Nsum[Rij]
-            #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
+            #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort!
             ki, kj, m = S_ki[k_spl, Rij], S_kj[k_spl, Rij], S_m[k_spl, Rij]
 
             mConv = convert(T, m)
