@@ -18,6 +18,7 @@ must be computed).
 module MPI_Detail
 include("./partition.jl")
 include("./best_partition_triangle.jl")
+include("./best_partition_pairs.jl")
 using .BestPartitionTriangle: get_all_ranges_stu
 
 export get_all_ranges_stu
