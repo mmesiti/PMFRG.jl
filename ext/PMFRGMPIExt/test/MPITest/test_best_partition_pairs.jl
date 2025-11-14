@@ -5,7 +5,7 @@ using .BestPartitionPairs:
     _get_ranges_t,
     _get_number_of_sites_eo,
     _all_ns_x_ntu_factorizations,
-    get_all_ranges_stu,
+    get_all_ranges_st,
     get_imbalance
 
 
@@ -98,5 +98,27 @@ function test_best_partition_pairs()
         #        end
         #    end
         #end
+
+        @testset "get_all_ranges_st covers all (is, it) pairs exactly once" begin
+            for N = 10:13, nranks = 2:min(5, N)
+                all_ranges = get_all_ranges_st(N, nranks)
+
+                # Check correct number of ranks
+                @test length(all_ranges) == nranks
+
+                # Check all (is, it) pairs covered exactly once
+                coverage = zeros(Int, N, N)
+                for (isrange, itranges) in all_ranges
+                    for is in isrange
+                        for itrange in itranges
+                            for it in itrange
+                                coverage[is, it] += 1
+                            end
+                        end
+                    end
+                end
+                @test all(coverage .== 1)
+            end
+        end
     end
 end

@@ -4,22 +4,17 @@ for the MPI partitioning of the computation
 of the arrays a,b,c (and Ta,Tb,Tc,Td)
 in PMFRG.getXBubblePartition!
 
-The ranges in the s,t,u indices are computed.
+The ranges in the s,t indices are computed.
 
-The S - T domain is partitioned in a number of rectangles.
-Along the S direction, the partitions are as equal as possible,
-while along the T direction the partitions are adjusted
-for best load balancing,
-assuming that only the elements with iu<=it need to be computed
-(also taking into account that only elements
-for which is+it+iu has a given parity
-must be computed).
+The S - T domain is partitioned using iteration pairing for load balancing.
+Each rank works on frequencies near both ends of the spectrum (low and high),
+or on a contiguous middle section, to balance the non-uniform computational costs
+across the frequency range.
 """
 module MPI_Detail
 include("./partition.jl")
-include("./best_partition_triangle.jl")
 include("./best_partition_pairs.jl")
-using .BestPartitionTriangle: get_all_ranges_stu
+using .BestPartitionPairs: get_all_ranges_st
 
-export get_all_ranges_stu
+export get_all_ranges_st
 end

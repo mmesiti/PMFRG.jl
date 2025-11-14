@@ -2,14 +2,12 @@ using MPI
 using Test
 
 include("./test_partition.jl")
-include("./test_best_partition_triangle.jl")
 include("./test_best_partition_pairs.jl")
 
 function test_mpi()
     @testset verbose = true "MPI tests" begin
         @testset verbose = true "Unit tests for MPI functionality" begin
             test_1D_partition()
-            #test_best_partition_triangle()
             test_best_partition_pairs()
         end
 
@@ -35,26 +33,26 @@ function test_mpi()
             end
         end
 
-        # DEBUG @testset verbose = true "MPI tests - external executables" begin
-        # DEBUG     dir = dirname(@__FILE__)
-        # DEBUG     run_mpi_script(
-        # DEBUG         joinpath(dir, "..", "RegressionTests", "PMFRG.getXBubbleMPI.jl"),
-        # DEBUG         2,
-        # DEBUG         "Regression test - getXBubbleMPI",
-        # DEBUG     )
+        @testset verbose = true "MPI tests - external executables" begin
+            dir = dirname(@__FILE__)
+            run_mpi_script(
+                joinpath(dir, "..", "RegressionTests", "PMFRG.getXBubbleMPI.jl"),
+                2,
+                "Regression test - getXBubbleMPI",
+            )
 
-        # DEBUG     run_mpi_script(
-        # DEBUG         joinpath(dir, "test_chunk_communication.jl"),
-        # DEBUG         4,
-        # DEBUG         "Ibcast! communication example - test_chunk_communication.jl",
-        # DEBUG     )
+            run_mpi_script(
+                joinpath(dir, "test_chunk_communication.jl"),
+                4,
+                "Ibcast! communication example - test_chunk_communication.jl",
+            )
 
-        # DEBUG     run_mpi_script(
-        # DEBUG         joinpath(dir, "generate_data_example_mpi.jl"),
-        # DEBUG         2,
-        # DEBUG         "Generate Data Example",
-        # DEBUG     )
+            run_mpi_script(
+                joinpath(dir, "generate_data_example_mpi.jl"),
+                2,
+                "Generate Data Example",
+            )
 
-        # DEBUG end
+        end
     end
 end
