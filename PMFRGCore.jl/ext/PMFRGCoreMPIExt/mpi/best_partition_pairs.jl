@@ -1,18 +1,14 @@
 module BestPartitionPairs
 
-struct TooManyRanksError <: Exception
-    rank_tu::Int
-    N::Int
-end
-
-function Base.show(io::IO, e::TooManyRanksError)
-    println(io, "Too many ranks ($(e.rank_tu)) for N=$(e.N)")
-end
-
-"""Returns the t and u ranges for a given rank out of nranks,
-   trying to produce the most balanced partition
-   (where the weight is the number of sites of the given parity
-   in the triangle where iu <= it).
+"""Returns a pair of t ranges for a given rank out of nranks,
+   trying to assign the same number of t-slices to all ranks.
+   The pair will be composed of two ranges
+   of the same length when possible
+   (or of length differing by 1 at most)
+   whose distance from the average value of t
+   is equal (or it could differ by 1).
+   
+   When the two ranges touch, only one range is returned
 """
 function _get_ranges_t(N::Int, nranks_t::Int, rank_t::Int)
     fences(N, npieces) = [round(Int, i * N / npieces, RoundDown) for i = 0:npieces]
@@ -36,12 +32,20 @@ function _get_ranges_t(N::Int, nranks_t::Int, rank_t::Int)
 
 end
 
+struct Load
+    addXLoad::Int64
+    addXTildeLoad::Int64
+end
+import Base: +
++(a::Load, b::Load) = Load(a.addXLoad + b.addXLoad, a.addXTildeLoad + b.addXTildeLoad)
+
+
 
 function get_imbalance_from_ranges(N::Int, nranks::Int, ranges_per_all_ranks, parity::Int)
     min_nsites = typemax(Int64)
     max_nsites = 0
-    for (irank, (isrange, itrange, e)) in enumerate(ranges_per_all_ranks)
-        nsites = _count_sites(itrange, iurange, isrange, parity)
+    for (irank, (isrange, itranges)) in enumerate(ranges_per_all_ranks)
+        nsites = _count_sites(itranges, isrange, parity)
         min_nsites = (nsites < min_nsites) ? nsites : min_nsites
         max_nsites = (nsites > max_nsites) ? nsites : max_nsites
     end
@@ -114,4 +118,31 @@ function _get_number_of_sites_eo(Ntu)
     odd = total_elements - even
     even, odd
 end
+
+"""
+For given values of N and nranks, returns the ranges in s and t
+for all ranks using the pairing-based load balancing approach.
+
+Simplified version:
+- Always returns 1:N for isrange (no splitting in s direction)
+- Splits only along the t direction using iteration pairing
+- Parity is not considered 
+
+Returns: Vector of Tuples, where each tuple contains:
+  (isrange, (itrange1, [itrange2]))
+The it component is a tuple of 1 or 2 ranges depending on whether
+the ranges touch.
+"""
+function get_all_ranges_st(N::Int, nranks::Int)
+    all_ranges = Vector{Tuple{UnitRange{Int64},Tuple{Vararg{UnitRange{Int64}}}}}()
+
+    for rank = 0:(nranks-1)
+        isrange = 1:N  # Full range for s, no splitting yet
+        itranges = _get_ranges_t(N, nranks, rank)
+        push!(all_ranges, (isrange, itranges))
+    end
+
+    return all_ranges
+end
+
 end

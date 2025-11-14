@@ -7,7 +7,6 @@ function test_mpi_core()
     @testset verbose = true "MPI tests" begin
         @testset verbose = true "Unit tests for MPI functionality" begin
             test_1D_partition()
-            #test_best_partition_triangle()
             test_best_partition_pairs()
         end
 
@@ -72,6 +71,7 @@ fi
             print_footer()
         end
 
+        << << << < HEAD:PMFRGCore.jl/ext/PMFRGCoreMPIExt/test/MPITest/mpi-tests.jl
         # DEBUG @testset verbose = true "MPI tests - external executables" begin
         # DEBUG     dir = dirname(@__FILE__)
         # DEBUG     run_mpi_script(
@@ -94,6 +94,27 @@ fi
         # DEBUG         2,
         # DEBUG         "Generate Data Example",
         # DEBUG     )
+        # DEBUG end
+        # DEBUG @testset verbose = true "MPI tests - external executables" begin
+        # DEBUG     dir = dirname(@__FILE__)
+        # DEBUG     run_mpi_script(
+        # DEBUG         joinpath(dir, "..", "RegressionTests", "PMFRG.getXBubbleMPI.jl"),
+        # DEBUG         2,
+        # DEBUG         "Regression test - getXBubbleMPI",
+        # DEBUG     )
+
+        # DEBUG     run_mpi_script(
+        # DEBUG         joinpath(dir, "test_chunk_communication.jl"),
+        # DEBUG         4,
+        # DEBUG         "Ibcast! communication example - test_chunk_communication.jl",
+        # DEBUG     )
+
+        # DEBUG     run_mpi_script(
+        # DEBUG         joinpath(dir, "generate_data_example_mpi.jl"),
+        # DEBUG         2,
+        # DEBUG         "Generate Data Example",
+        # DEBUG     )
+
         # DEBUG end
     end
 end

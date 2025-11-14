@@ -39,11 +39,11 @@ function PMFRGCore.getXBubble!(Workspace, Lam, ::PMFRGCore.UseMPI)
             parity = 0
         end
 
-        @timeit_debug "get_ranges" all_ranges =
-            MPI_Detail.get_all_ranges_stu(N, nranks, parity)
+        @timeit_debug "get_ranges" all_ranges = MPI_Detail.get_all_ranges_st(N, nranks)
         iurange_full = 1:N
-        isrange, itrange, _ = all_ranges[rank+1]
-        @timeit_debug "partition" PMFRGCore.getXBubblePartition!(
+        isrange, itranges = all_ranges[rank+1]
+        itrange = vcat(itranges...)
+        @timeit_debug "partition" PMFRG.getXBubblePartition!(
             X,
             Workspace.State,
             Workspace.Deriv,
@@ -57,33 +57,49 @@ function PMFRGCore.getXBubble!(Workspace, Lam, ::PMFRGCore.UseMPI)
 
 
         @timeit_debug "communication" for root = 0:(nranks-1)
-            isrange, itrange, iurange_restrict = all_ranges[root+1]
-            iurange_abc = Par.Options.usesymmetry ? iurange_restrict : iurange_full
+            isrange_root, itranges_root = all_ranges[root+1]
 
-            MPI.Bcast!((@view X.a[:, isrange, itrange, iurange_abc]), root, MPI.COMM_WORLD)
-            MPI.Bcast!((@view X.b[:, isrange, itrange, iurange_abc]), root, MPI.COMM_WORLD)
-            MPI.Bcast!((@view X.c[:, isrange, itrange, iurange_abc]), root, MPI.COMM_WORLD)
+            for itrange_root in itranges_root
+                iurange_restrict = 1:itrange_root.stop
+                iurange_abc = Par.Options.usesymmetry ? iurange_restrict : iurange_full
 
-            MPI.Bcast!(
-                (@view X.Ta[:, isrange, itrange, iurange_full]),
-                root,
-                MPI.COMM_WORLD,
-            )
-            MPI.Bcast!(
-                (@view X.Tb[:, isrange, itrange, iurange_full]),
-                root,
-                MPI.COMM_WORLD,
-            )
-            MPI.Bcast!(
-                (@view X.Tc[:, isrange, itrange, iurange_full]),
-                root,
-                MPI.COMM_WORLD,
-            )
-            MPI.Bcast!(
-                (@view X.Td[:, isrange, itrange, iurange_full]),
-                root,
-                MPI.COMM_WORLD,
-            )
+                MPI.Bcast!(
+                    (@view X.a[:, isrange_root, itrange_root, iurange_abc]),
+                    root,
+                    MPI.COMM_WORLD,
+                )
+                MPI.Bcast!(
+                    (@view X.b[:, isrange_root, itrange_root, iurange_abc]),
+                    root,
+                    MPI.COMM_WORLD,
+                )
+                MPI.Bcast!(
+                    (@view X.c[:, isrange_root, itrange_root, iurange_abc]),
+                    root,
+                    MPI.COMM_WORLD,
+                )
+
+                MPI.Bcast!(
+                    (@view X.Ta[:, isrange_root, itrange_root, iurange_full]),
+                    root,
+                    MPI.COMM_WORLD,
+                )
+                MPI.Bcast!(
+                    (@view X.Tb[:, isrange_root, itrange_root, iurange_full]),
+                    root,
+                    MPI.COMM_WORLD,
+                )
+                MPI.Bcast!(
+                    (@view X.Tc[:, isrange_root, itrange_root, iurange_full]),
+                    root,
+                    MPI.COMM_WORLD,
+                )
+                MPI.Bcast!(
+                    (@view X.Td[:, isrange_root, itrange_root, iurange_full]),
+                    root,
+                    MPI.COMM_WORLD,
+                )
+            end
         end
     else
         @warn "MPI package used but not initialized" maxlog = 1
