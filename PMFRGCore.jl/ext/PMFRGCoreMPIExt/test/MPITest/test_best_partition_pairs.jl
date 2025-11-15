@@ -2,11 +2,7 @@ using Test
 include("../../mpi/best_partition_pairs.jl")
 
 using .BestPartitionPairs:
-    _get_ranges_t,
-    _get_number_of_sites_eo,
-    _all_ns_x_ntu_factorizations,
-    get_all_ranges_st,
-    get_imbalance
+    _get_ranges_t, _all_ns_x_nt_factorizations, get_all_ranges_st, get_imbalance_from_ranges
 
 
 function test_best_partition_pairs()
@@ -27,7 +23,7 @@ function test_best_partition_pairs()
 
         end
         @testset "ranges cover all sites" begin
-            for N = 1:30, nranks = 1:min(5, N)
+            for N = 2:30, nranks = 1:min(5, div(N, 2))
                 coverage = zeros(Int, N)
                 all_ranges_for_all_ranks =
                     [_get_ranges_t(N, nranks, irank) for irank = 0:(nranks-1)]
@@ -49,55 +45,25 @@ function test_best_partition_pairs()
             end
         end
 
-        #@testset "ranges do not go out of 1:N range" begin
-        #    for N = 1:10, nranks = 1:min(5, N)
-        #        all_ranges = [_get_ranges_tu(N, nranks, irank) for irank = 0:(nranks-1)]
-        #        for (itrange, iurange) in all_ranges
-        #            @test 1 <= itrange.start <= N
-        #            @test 1 <= itrange.stop <= N
-        #            @test 1 <= iurange.start <= N
-        #            @test 1 <= iurange.stop <= N
-        #        end
-        #    end
-        #end
+        @testset "ranges do not go out of 1:N range" begin
+            for N = 2:30, nranks = 1:min(5, div(N, 2))
+                all_ranges_for_all_ranks =
+                    [_get_ranges_t(N, nranks, irank) for irank = 0:(nranks-1)]
+                for rank = 1:nranks
+                    for itrange in all_ranges_for_all_ranks[rank]
+                        @test 1 <= itrange.start <= N
+                        @test 1 <= itrange.stop <= N
+                    end
+                end
+            end
+        end
 
-
-
-
-        #@testset "get all nranks_s x nranks_tu factorizations" begin
-        #    all_pairs = _all_ns_x_ntu_factorizations(50)
-        #    @test (1, 50) in all_pairs
-        #    @test (2, 25) in all_pairs
-        #    for pair in all_pairs
-        #        @test typeof(pair) <: Tuple{Int,Int}
-        #    end
-        #    for i = 1:50
-        #        if 50 % i != 0
-        #            for pair in all_pairs
-        #                @test pair[1] != i
-        #            end
-        #        end
-        #    end
-
-        #end
-
-        #@testset "all sites are covered, only once" begin
-        #    for N = 2:10, nranks = 1:min(N, 5), parity = 0:1
-        #        covered = zeros(Int, N, N, N)
-
-        #        stu_ranges = get_all_ranges_stu(N, nranks, parity)
-        #        @testset for it = 1:N, iu = 1:it, is = 1:N
-        #            if (it + iu + is) % 2 == parity
-        #                for (isrange, itrange, iurange) in stu_ranges
-        #                    if (is in isrange && it in itrange && iu in iurange)
-        #                        covered[is, it, iu] += 1
-        #                    end
-        #                end
-        #                @test covered[is, it, iu] == 1
-        #            end
-        #        end
-        #    end
-        #end
+        @testset "_get_ranges_t requires N >= 2*nranks_t" begin
+            # Test that _get_ranges_t throws TooManyRanksError when N < 2*nranks_t
+            @test_throws BestPartitionPairs.TooManyRanksError _get_ranges_t(3, 2, 0)  # N < 2*nranks_t
+            @test _get_ranges_t(4, 2, 0) isa Tuple  # N = 2*nranks_t (boundary case)
+            @test _get_ranges_t(10, 2, 0) isa Tuple # N > 2*nranks_t
+        end
 
         @testset "get_all_ranges_st covers all (is, it) pairs exactly once" begin
             for N = 10:13, nranks = 2:min(5, N)
@@ -118,6 +84,38 @@ function test_best_partition_pairs()
                     end
                 end
                 @test all(coverage .== 1)
+            end
+        end
+
+        @testset "N=50 with nranks=2,4,8 - coverage and load balancing" begin
+            N = 50
+            for nranks in [2, 4, 8]
+                @testset "N=$N, nranks=$nranks" begin
+                    all_ranges = get_all_ranges_st(N, nranks)
+
+                    # Check correct number of ranks
+                    @test length(all_ranges) == nranks
+
+                    # Check all (is, it) pairs covered exactly once
+                    coverage = zeros(Int, N, N)
+                    for (isrange, itranges) in all_ranges
+                        for is in isrange
+                            for itrange in itranges
+                                for it in itrange
+                                    coverage[is, it] += 1
+                                end
+                            end
+                        end
+                    end
+                    @test all(coverage .== 1)
+
+                    # Check load balancing metrics
+                    imbalance_X, imbalance_XTilde = get_imbalance_from_ranges(all_ranges, N)
+
+                    # Verify reasonable load balancing (imbalance should be < 50%)
+                    @test imbalance_X < 0.07
+                    @test imbalance_XTilde < 0.07
+                end
             end
         end
     end

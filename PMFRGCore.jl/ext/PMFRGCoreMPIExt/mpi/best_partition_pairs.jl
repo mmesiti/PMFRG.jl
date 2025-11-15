@@ -1,4 +1,17 @@
 module BestPartitionPairs
+include("./partition.jl")
+import .Partition: partitions
+
+struct TooManyRanksError <: Exception
+    rank_t::Int
+    N::Int
+end
+
+function Base.show(io::IO, e::TooManyRanksError)
+    println(io, "Too many ranks ($(e.rank_t)) for N=$(e.N)")
+end
+
+
 
 """Returns a pair of t ranges for a given rank out of nranks,
    trying to assign the same number of t-slices to all ranks.
@@ -16,7 +29,13 @@ function _get_ranges_t(N::Int, nranks_t::Int, rank_t::Int)
     ends(N, npieces) = fences(N, npieces)[2:end]
     partitions(N, npieces) = [s:e for (s, e) in zip(starts(N, npieces), ends(N, npieces))]
 
+    if N < 2 * nranks_t
+        throw(TooManyRanksError(nranks_t, N))
+    end
+
     all_ranges = partitions(N, nranks_t * 2)
+
+
 
     low_range = all_ranges[rank_t+1]
     high_range = all_ranges[nranks_t*2-rank_t]
@@ -36,97 +55,106 @@ struct Load
     addXLoad::Int64
     addXTildeLoad::Int64
 end
+
 import Base: +
+
 +(a::Load, b::Load) = Load(a.addXLoad + b.addXLoad, a.addXTildeLoad + b.addXTildeLoad)
 
 
+function get_imbalance_from_ranges(ranges_per_all_ranks, N)
+    loads_per_rank = Load[]
 
-function get_imbalance_from_ranges(N::Int, nranks::Int, ranges_per_all_ranks, parity::Int)
-    min_nsites = typemax(Int64)
-    max_nsites = 0
-    for (irank, (isrange, itranges)) in enumerate(ranges_per_all_ranks)
-        nsites = _count_sites(itranges, isrange, parity)
-        min_nsites = (nsites < min_nsites) ? nsites : min_nsites
-        max_nsites = (nsites > max_nsites) ? nsites : max_nsites
+    for (isrange, itranges) in ranges_per_all_ranks
+        rank_load = Load(0, 0)
+        for is in isrange
+            for itrange in itranges
+                for it in itrange
+                    # Simple model:
+                    # - addXLoad increases linearly with it
+                    # - addXTildeLoad is constant
+                    # We neglect the effect of parity.
+
+                    rank_load = rank_load + Load(it, N)
+                end
+            end
+        end
+        push!(loads_per_rank, rank_load)
     end
-    return (max_nsites - min_nsites) / max_nsites
+
+    if isempty(loads_per_rank)
+        return 0.0
+    end
+
+    max_load_addX = maximum(l.addXLoad for l in loads_per_rank)
+    mean_load_addX = sum(l.addXLoad for l in loads_per_rank) / length(loads_per_rank)
+    imbalance_addX = (max_load_addX - mean_load_addX) / mean_load_addX
+
+    max_load_addXTilde = maximum(l.addXTildeLoad for l in loads_per_rank)
+    mean_load_addXTilde =
+        sum(l.addXTildeLoad for l in loads_per_rank) / length(loads_per_rank)
+    imbalance_addXTilde = (max_load_addXTilde - mean_load_addXTilde) / mean_load_addXTilde
+
+    return imbalance_addX, imbalance_addXTilde
 end
 
-
-
-"""Returns an estimate of the load imbalance among the ranks,
-   in the range 0.0-1.0.
- """
-function get_imbalance(N, nranks, get_ranges_func, parity)
-    all_ranges = get_ranges_func(N, nranks, parity)
-    get_imbalance_from_ranges(N, nranks, all_ranges, parity)
-end
-
-
-function _all_ns_x_ntu_factorizations(nranks)
+function _all_ns_x_nt_factorizations(nranks)
     [(nranks_s, div(nranks, nranks_s)) for nranks_s = 1:nranks if (nranks % nranks_s) == 0]
 end
 
 """
-For given values of N, nranks and parity choices,
-returns the ranges in s,t,u that correspond to the best balance partition,
-for all the ranks.
+Print load balancing factorization results in a readable format.
 """
-function get_all_ranges_stu(N::Int, nranks::Int, parity::Int)
-    imbalance = 1.0
+function _print_load_balancing_results(
+    N::Int,
+    nranks::Int,
+    all_ranges_best_X,
+    all_ranges_best_XTilde,
+    imbalance_X::Float64,
+    imbalance_XTilde::Float64,
+)
+    println("="^70)
+    println("MPI Load Balancing Factorization Results (N=$N, nranks=$nranks)")
+    println("="^70)
 
-    all_ranges_best = Vector{Tuple{UnitRange{Int64},UnitRange{Int64},UnitRange{Int64}}}()
-
-    for (nranks_s, nranks_tu) in _all_ns_x_ntu_factorizations(nranks)
-        all_ranges = Vector{Tuple{UnitRange,UnitRange,UnitRange}}()
-        for rank = 0:(nranks-1)
-
-            rank_s = rank % nranks_s
-            range_s = partitions(N, nranks_s)[1+rank_s]
-
-            rank_tu = div(rank, nranks_s, RoundToZero)
-            range_tu = _get_ranges_tu(N, nranks_tu, rank_tu)
-
-            range_stu = (range_s, range_tu...)
-            push!(all_ranges, range_stu)
-        end
-        candidate_imbalance = get_imbalance_from_ranges(N, nranks, all_ranges, parity)
-        if candidate_imbalance < imbalance
-            all_ranges_best = all_ranges
-            imbalance = candidate_imbalance
-        end
-    end
-    all_ranges_best
-end
-
-"""Returns the number of sites having iu<=it<=Ntu"""
-function get_number_of_sites_in_triangle(Ntu)
-    Int(Ntu * (Ntu + 1) / 2)
-end
-
-"""Returns the number of sites having iu<=it<=Ntu with a given parity."""
-function _get_number_of_sites_eo(Ntu)
-    total_elements = get_number_of_sites_in_triangle(Ntu)
-    even = if (Ntu % 2 == 0)
-        nhalf = Ntu / 2
-        2 * nhalf * (nhalf + 1) / 2
+    if all_ranges_best_X == all_ranges_best_XTilde
+        # Both objectives agree on the same factorization
+        nranks_s_best = length(unique(r[1] for r in all_ranges_best_X))
+        nranks_t_best = div(nranks, nranks_s_best)
+        println(
+            "Optimal factorization: nranks_s × nranks_t = $nranks_s_best × $nranks_t_best",
+        )
+        println("  Relative imbalance (addX):      $(round(imbalance_X * 100, digits=2))%")
+        println(
+            "  Relative imbalance (addXTilde): $(round(imbalance_XTilde * 100, digits=2))%",
+        )
     else
-        nhalf = (Ntu - 1) / 2
-        2 * nhalf * (nhalf + 1) / 2 + nhalf + 1
-    end
+        # Different optimal factorizations for the two objectives
+        println("Warning: Different optimal factorizations for addX and addXTilde")
+        println()
 
-    odd = total_elements - even
-    even, odd
+        nranks_s_X = length(unique(r[1] for r in all_ranges_best_X))
+        nranks_t_X = div(nranks, nranks_s_X)
+        println("Best for addX: nranks_s × nranks_t = $nranks_s_X × $nranks_t_X")
+        println("  Relative imbalance: $(round(imbalance_X * 100, digits=2))%")
+
+        nranks_s_XTilde = length(unique(r[1] for r in all_ranges_best_XTilde))
+        nranks_t_XTilde = div(nranks, nranks_s_XTilde)
+        println(
+            "Best for addXTilde: nranks_s × nranks_t = $nranks_s_XTilde × $nranks_t_XTilde",
+        )
+        println("  Relative imbalance: $(round(imbalance_XTilde * 100, digits=2))%")
+        println()
+    end
+    println("="^70)
 end
 
 """
 For given values of N and nranks, returns the ranges in s and t
 for all ranks using the pairing-based load balancing approach.
 
-Simplified version:
-- Always returns 1:N for isrange (no splitting in s direction)
+- Splits along the s direction in equal parts
+  differing at most by unity
 - Splits only along the t direction using iteration pairing
-- Parity is not considered 
 
 Returns: Vector of Tuples, where each tuple contains:
   (isrange, (itrange1, [itrange2]))
@@ -134,15 +162,63 @@ The it component is a tuple of 1 or 2 ranges depending on whether
 the ranges touch.
 """
 function get_all_ranges_st(N::Int, nranks::Int)
-    all_ranges = Vector{Tuple{UnitRange{Int64},Tuple{Vararg{UnitRange{Int64}}}}}()
+    imbalance_X = Inf
+    imbalance_XTilde = Inf
+    all_ranges_best_XTilde =
+        Vector{Tuple{UnitRange{Int64},Tuple{Vararg{UnitRange{Int64}}}}}()
+    all_ranges_best_X = Vector{Tuple{UnitRange{Int64},Tuple{Vararg{UnitRange{Int64}}}}}()
 
-    for rank = 0:(nranks-1)
-        isrange = 1:N  # Full range for s, no splitting yet
-        itranges = _get_ranges_t(N, nranks, rank)
-        push!(all_ranges, (isrange, itranges))
+
+    for (nranks_s, nranks_t) in _all_ns_x_nt_factorizations(nranks)
+
+        try
+            all_ranges = Vector{Tuple{UnitRange{Int64},Tuple{Vararg{UnitRange{Int64}}}}}()
+
+            s_partitions = partitions(N, nranks_s)
+            for rank_s = 0:(nranks_s-1)
+
+                isrange = s_partitions[1+rank_s]
+
+                for rank_t = 0:(nranks_t-1)
+                    itranges = _get_ranges_t(N, nranks_t, rank_t)
+                    push!(all_ranges, (isrange, itranges))
+                end
+            end
+
+            candidate_imbalance_X, candidate_imbalance_XTilde =
+                get_imbalance_from_ranges(all_ranges, N)
+            if candidate_imbalance_X < imbalance_X
+                all_ranges_best_X = all_ranges
+                imbalance_X = candidate_imbalance_X
+            end
+            if candidate_imbalance_XTilde < imbalance_XTilde
+                all_ranges_best_XTilde = all_ranges
+                imbalance_XTilde = candidate_imbalance_XTilde
+            end
+
+        catch e
+            if e isa TooManyRanksError
+                # Skip this factorization as it's invalid (N < 2*nranks_t)
+                continue
+            else
+                rethrow(e)
+            end
+        end
+
     end
 
-    return all_ranges
+
+    _print_load_balancing_results(
+        N,
+        nranks,
+        all_ranges_best_X,
+        all_ranges_best_XTilde,
+        imbalance_X,
+        imbalance_XTilde,
+    )
+
+    println("Using addX-optimal factorization")
+    all_ranges_best_X
 end
 
 end
