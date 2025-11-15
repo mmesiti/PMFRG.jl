@@ -43,7 +43,7 @@ function PMFRGCore.getXBubble!(Workspace, Lam, ::PMFRGCore.UseMPI)
         iurange_full = 1:N
         isrange, itranges = all_ranges[rank+1]
         itrange = vcat(itranges...)
-        @timeit_debug "partition" PMFRG.getXBubblePartition!(
+        @timeit_debug "partition" PMFRGCore.getXBubblePartition!(
             X,
             Workspace.State,
             Workspace.Deriv,

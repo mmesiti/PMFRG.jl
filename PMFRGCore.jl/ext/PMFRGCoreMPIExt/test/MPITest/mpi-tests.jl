@@ -71,50 +71,23 @@ fi
             print_footer()
         end
 
-        << << << < HEAD:PMFRGCore.jl/ext/PMFRGCoreMPIExt/test/MPITest/mpi-tests.jl
-        # DEBUG @testset verbose = true "MPI tests - external executables" begin
-        # DEBUG     dir = dirname(@__FILE__)
-        # DEBUG     run_mpi_script(
-        # DEBUG         joinpath(dir, "..", "RegressionTests", "PMFRG.getXBubbleMPI.jl"),
-        # DEBUG         2,
-        # DEBUG         "Regression test - getXBubbleMPI",
-        # DEBUG     )
-        # DEBUG     run_mpi_script(
-        # DEBUG         joinpath(dir, "test_chunk_communication.jl"),
-        # DEBUG         4,
-        # DEBUG         "Ibcast! communication example - test_chunk_communication.jl",
-        # DEBUG     )
-        # DEBUG     run_mpi_script(
-        # DEBUG        joinpath(dir, "test_setup_functions.jl"),
-        # DEBUG        2,
-        # DEBUG        "Setup and compatibility tests - MPI version",
-        # DEBUG     )
-        # DEBUG     run_mpi_script(
-        # DEBUG         joinpath(dir, "generate_data_example_mpi.jl"),
-        # DEBUG         2,
-        # DEBUG         "Generate Data Example",
-        # DEBUG     )
-        # DEBUG end
-        # DEBUG @testset verbose = true "MPI tests - external executables" begin
-        # DEBUG     dir = dirname(@__FILE__)
-        # DEBUG     run_mpi_script(
-        # DEBUG         joinpath(dir, "..", "RegressionTests", "PMFRG.getXBubbleMPI.jl"),
-        # DEBUG         2,
-        # DEBUG         "Regression test - getXBubbleMPI",
-        # DEBUG     )
-
-        # DEBUG     run_mpi_script(
-        # DEBUG         joinpath(dir, "test_chunk_communication.jl"),
-        # DEBUG         4,
-        # DEBUG         "Ibcast! communication example - test_chunk_communication.jl",
-        # DEBUG     )
-
-        # DEBUG     run_mpi_script(
-        # DEBUG         joinpath(dir, "generate_data_example_mpi.jl"),
-        # DEBUG         2,
-        # DEBUG         "Generate Data Example",
-        # DEBUG     )
-
-        # DEBUG end
+        @testset verbose = true "MPI tests - external executables" begin
+            dir = dirname(@__FILE__)
+            run_mpi_script(
+                joinpath(dir, "..", "RegressionTests", "PMFRG.getXBubbleMPI.jl"),
+                2,
+                "Regression test - getXBubbleMPI",
+            )
+            run_mpi_script(
+                joinpath(dir, "test_chunk_communication.jl"),
+                4,
+                "Ibcast! communication example - test_chunk_communication.jl",
+            )
+            run_mpi_script(
+                joinpath(dir, "test_setup_functions.jl"),
+                2,
+                "Setup and compatibility tests - MPI version",
+            )
+        end
     end
 end
