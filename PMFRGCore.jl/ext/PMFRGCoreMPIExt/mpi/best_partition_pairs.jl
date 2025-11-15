@@ -208,16 +208,18 @@ function get_all_ranges_st(N::Int, nranks::Int)
     end
 
 
-    _print_load_balancing_results(
-        N,
-        nranks,
-        all_ranges_best_X,
-        all_ranges_best_XTilde,
-        imbalance_X,
-        imbalance_XTilde,
-    )
+    if get(ENV, "PMFRG_MPI_LOAD_BALANCING_VERBOSE", "false") == 1
+        _print_load_balancing_results(
+            N,
+            nranks,
+            all_ranges_best_X,
+            all_ranges_best_XTilde,
+            imbalance_X,
+            imbalance_XTilde,
+        )
+        println("Using addX-optimal factorization")
+    end
 
-    println("Using addX-optimal factorization")
     all_ranges_best_X
 end
 

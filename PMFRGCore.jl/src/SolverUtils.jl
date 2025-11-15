@@ -29,7 +29,7 @@ function AllocateSetup(
     ParallelizationScheme::AbstractParallelizationScheme = MultiThreaded(),
 )
     (; Npairs, NUnique) = Par.System
-    Par.Options.MinimalOutput || println("One Loop: T= ", Par.NumericalParams.T)
+    Par.Options.MinimalOutput
     ##Allocate Memory:
     X = BubbleType(Par)
     floattype = _getFloatType(Par) #get type of float, i.e. Float64
