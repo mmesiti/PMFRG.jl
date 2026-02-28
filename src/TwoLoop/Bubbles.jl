@@ -275,7 +275,7 @@ adds to ResultBubble given the vertex as well as a bubble inserted on the left. 
     iu::Integer,
     nwpr::Integer,
     Par::PMFRGParams,
-    Props,
+    Props::AbstractVector,
     VBuffer::VertexBufferType,
     XBuffer::BubbleBufferType,
 )
@@ -307,7 +307,7 @@ end
     iu::Integer,
     nwpr::Integer,
     Par::PMFRGParams,
-    Props,
+    Props::AbstractMatrix,
 )
     addBLTilde!(
         B::BubbleType,
@@ -334,7 +334,7 @@ function addBL!(
     iu::Integer,
     nwpr::Integer,
     Par::PMFRGParams,
-    Props,
+    Props::AbstractVector,
     Buffer::VertexBufferType,
 ) where {T}
     (; Npairs, Nsum, siteSum) = Par.System
@@ -354,7 +354,7 @@ function addBL!(
             ki, kj, m, xk =
                 S_ki[k_spl, Rij], S_kj[k_spl, Rij], S_m[k_spl, Rij], S_xk[k_spl, Rij]
 
-            Ptm = Props[xk, xk] * m
+            Ptm = Props[xk] * m
 
             Bc_sum += (Vc43[kj] + Vc34[kj]) * Ptm * Γ0.c[ki]
         end

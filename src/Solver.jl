@@ -41,12 +41,14 @@ function AllocateSetup(
     floattype = _getFloatType(Par) #get type of float, i.e. Float64
     VertexBuffers =
         getChannel([VertexBufferType(floattype, Npairs) for _ = 1:Threads.nthreads()])
-    PropsBuffers = getChannel([
-        MMatrix{NUnique,NUnique,floattype,NUnique * NUnique}(undef) for
-        _ = 1:Threads.nthreads()
+    PropsXYBuffers = getChannel([
+        (
+            MVector{NUnique,floattype}(undef),
+            MMatrix{NUnique,NUnique,floattype,NUnique * NUnique}(undef),
+        ) for _ = 1:Threads.nthreads()
     ])
 
-    Buffs = BufferType(PropsBuffers, VertexBuffers)
+    Buffs = BufferType(PropsXYBuffers, VertexBuffers)
     return (; X, Buffs, Par, ParallelizationScheme)
 end
 

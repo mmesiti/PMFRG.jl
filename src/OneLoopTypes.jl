@@ -39,8 +39,8 @@ end
 
 ## ______________ State Variables shorthand ______________
 
-struct BufferType{PropsBuff,VertexBuff}
-    Props::PropsBuff
+struct BufferType{PropsXYBuff,VertexBuff}
+    PropsXY::PropsXYBuff
     Vertex::VertexBuff
 end
 

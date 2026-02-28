@@ -133,28 +133,33 @@ function getXBubblePartition!(
     iurange,
 )
     (; T, N, lenIntw, np_vec) = Par.NumericalParams
-    PropsBuffers = Buffers.Props
+    PropsXYBuffers = Buffers.PropsXY
     VertexBuffers = Buffers.Vertex
     iG(x, nw) = iG_(State.γ, x, Lam, nw, T)
     iSKat(x, nw) = iSKat_(State.γ, Deriv.γ, x, Lam, nw, T)
 
-    function getKataninProp!(BubbleProp, nw1, nw2)
-        for i = 1:Par.System.NUnique, j = 1:Par.System.NUnique
-            BubbleProp[i, j] = iSKat(i, nw1) * iG(j, nw2) * T
+    function getKataninPropX!(PropX, nw1, nw2)
+        for x = 1:Par.System.NUnique
+            PropX[x] = iSKat(x, nw1) * iG(x, nw2) * T
         end
-        return SMatrix(BubbleProp)
     end
 
-    function single_it_iteration(it, sprop, nw, is, Buffer, ns)
+    function getKataninPropY!(PropY, nw1, nw2)
+        for i = 1:Par.System.NUnique, j = 1:Par.System.NUnique
+            PropY[i, j] = iSKat(i, nw1) * iG(j, nw2) * T
+        end
+    end
+
+    function single_it_iteration(it, PropX, PropY, nw, is, Buffer, ns)
         nt = np_vec[it]
         for iu in iurange
             nu = np_vec[iu]
             if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
                 continue
             end
-            addXTilde!(X, State, Par, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
+            addXTilde!(X, State, Par, is, it, iu, nw, PropY) # add to XTilde-type bubble functions
             if (!Par.Options.usesymmetry || nu <= nt)
-                addX!(X, State, Par, is, it, iu, nw, sprop, Buffer)# add to X-type bubble functions
+                addX!(X, State, Par, is, it, iu, nw, PropX, Buffer)# add to X-type bubble functions
             end
         end
     end
@@ -163,15 +168,24 @@ function getXBubblePartition!(
         (is, it) for is in isrange, it = 1:div(length(itrange), 2, RoundUp)
     )
 
-        BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
+        (BubblePropX, BubblePropY) = take!(PropsXYBuffers)# get pre-allocated thread-safe buffers
         Buffer = take!(VertexBuffers)
         ns = np_vec[is]
 
 
         if isodd(length(itrange)) && it_iteration == 1
             for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
-                sprop = getKataninProp!(BubbleProp, nw, nw + ns)
-                single_it_iteration(itrange[end], sprop, nw, is, Buffer, ns)
+                getKataninPropX!(BubblePropX, nw, nw + ns)
+                getKataninPropY!(BubblePropY, nw, nw + ns)
+                single_it_iteration(
+                    itrange[end],
+                    BubblePropX,
+                    BubblePropY,
+                    nw,
+                    is,
+                    Buffer,
+                    ns,
+                )
             end
         else
             if isodd(length(itrange))
@@ -185,13 +199,14 @@ function getXBubblePartition!(
             end
 
             for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
-                sprop = getKataninProp!(BubbleProp, nw, nw + ns)
-                single_it_iteration(itlow, sprop, nw, is, Buffer, ns)
-                single_it_iteration(ithigh, sprop, nw, is, Buffer, ns)
+                getKataninPropX!(BubblePropX, nw, nw + ns)
+                getKataninPropY!(BubblePropY, nw, nw + ns)
+                single_it_iteration(itlow, BubblePropX, BubblePropY, nw, is, Buffer, ns)
+                single_it_iteration(ithigh, BubblePropX, BubblePropY, nw, is, Buffer, ns)
             end
         end
 
-        put!(PropsBuffers, BubbleProp)
+        put!(PropsXYBuffers, (BubblePropX, BubblePropY))
         put!(VertexBuffers, Buffer)
     end
 
@@ -258,7 +273,7 @@ function addX!(
             #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort!
             ki, kj, m, xk =
                 S_ki[k_spl, Rij], S_kj[k_spl, Rij], S_m[k_spl, Rij], S_xk[k_spl, Rij]
-            Ptm = Props[xk, xk] * m
+            Ptm = Props[xk] * m
 
             Xa_sum += (+Va12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj] * 2) * Ptm
 
@@ -346,6 +361,7 @@ function addXTilde!(
     end
 end
 const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
+const SingleElementVector = Union{SVector{1},MVector{1}}
 
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 @inline function addXTilde!(
@@ -430,7 +446,7 @@ end
     it::Integer,
     iu::Integer,
     nwpr::Integer,
-    Props::SingleElementMatrix,
+    Props::SingleElementVector,
     Buffer,
 ) where {T}
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer

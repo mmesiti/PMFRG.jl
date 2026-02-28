@@ -15,13 +15,19 @@ function AllocateSetup(
     X = BubbleType(Par)
     Y = BubbleType(Par)
     floattype = _getFloatType(Par)
-    PropsBuffers =
-        getChannel([MMatrix{NUnique,NUnique,floattype}(undef) for _ = 1:Threads.nthreads()])
+    PropsXYBuffers = getChannel([
+        (
+            MVector{NUnique,floattype}(undef),
+            MMatrix{NUnique,NUnique,floattype,NUnique * NUnique}(undef),
+        ) for _ = 1:Threads.nthreads()
+    ])
+
+
     VertexBuffers =
         getChannel([VertexBufferType(floattype, Npairs) for _ = 1:Threads.nthreads()])
     BubbleBuffers =
         getChannel([BubbleBufferType(floattype, Npairs) for _ = 1:Threads.nthreads()])
-    Buffs = BufferTypeTwoLoop(PropsBuffers, VertexBuffers, BubbleBuffers)
+    Buffs = BufferTypeTwoLoop(PropsXYBuffers, VertexBuffers, BubbleBuffers)
     return (; X, Y, Buffs, Par, ParallelizationScheme)
 end
 include("Buffers.jl")

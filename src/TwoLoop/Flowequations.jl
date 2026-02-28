@@ -5,6 +5,7 @@ function getDerivTwoLoop!(Deriv, State, setup, Lam)
     getDFint!(Workspace, Lam)
     get_Self_Energy!(Workspace, Lam)
     getXBubble!(Workspace, Lam)
+
     symmetrizeBubble!(Workspace.X, Par)
 
     addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
@@ -56,13 +57,14 @@ function addTo2PartBubble!(
     @sync begin
         for is = 1:N, it = 1:N
             Threads.@spawn begin
-                BubbleProp = take!(Buffer.Props)# get pre-allocated thread-safe buffers
+
+                PropsXY = take!(Buffer.PropsXY)# get pre-allocated thread-safe buffers
                 VBuffer = take!(Buffer.Vertex)
                 XBuffer = take!(Buffer.X)
                 ns = np_vec[is]
                 nt = np_vec[it]
                 for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
-                    sprop = getProp!(BubbleProp, nw, nw + ns)
+                    spropX, spropY = getProp!(PropsXY, nw, nw + ns)
                     for iu = 1:N
                         nu = np_vec[iu]
                         if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
@@ -78,7 +80,7 @@ function addTo2PartBubble!(
                             iu,
                             nw,
                             Par,
-                            sprop,
+                            spropY,
                         )
                         if (!Par.Options.usesymmetry || nu <= nt)
                             addB_Func!(
@@ -91,14 +93,14 @@ function addTo2PartBubble!(
                                 iu,
                                 nw,
                                 Par,
-                                sprop,
+                                spropX,
                                 VBuffer,
                                 XBuffer,
                             )
                         end
                     end
                 end
-                put!(Buffer.Props, BubbleProp)
+                put!(Buffer.PropsXY, PropsXY)
                 put!(Buffer.Vertex, VBuffer)
                 put!(Buffer.X, XBuffer)
             end

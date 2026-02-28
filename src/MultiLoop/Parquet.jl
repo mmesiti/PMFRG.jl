@@ -106,11 +106,15 @@ function constructPropagatorFunction(γ, Lam, Par)
 
     @inline iG(x, nw) = iG_(γ, x, Lam, nw, T)
 
-    function getProp!(BubbleProp, nw1, nw2)
-        for i = 1:NUnique, j = 1:NUnique
-            BubbleProp[i, j] = iG(i, nw1) * iG(j, nw2) * T
+    function getProp!(BubblePropsXY, nw1, nw2)
+        PropX, PropY = BubblePropsXY
+        for i = 1:NUnique
+            PropX[i] = iG(i, nw1) * iG(i, nw2) * T
         end
-        return BubbleProp
+        for i = 1:NUnique, j = 1:NUnique
+            PropY[i, j] = iG(i, nw1) * iG(j, nw2) * T
+        end
+        return PropX, PropY
     end
     return getProp!
 end

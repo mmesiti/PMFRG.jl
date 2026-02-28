@@ -47,8 +47,8 @@ struct BubbleBufferType{T}
 end
 BubbleBufferType(type, Npairs) = BubbleBufferType((zeros(type, Npairs) for _ = 1:4)...)
 
-struct BufferTypeTwoLoop{PropsBuff,VertexBuff,XBuff}
-    Props::PropsBuff
+struct BufferTypeTwoLoop{PropsXYBuff,VertexBuff,XBuff}
+    PropsXY::PropsXYBuff
     Vertex::VertexBuff
     X::XBuff
 end
