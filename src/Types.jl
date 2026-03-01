@@ -90,16 +90,18 @@ getPMFRGMethod(::Val{2}) = TwoLoop()
 getPMFRGMethod(::Val{n}) where {n} = MultiLoop(n)
 getPMFRGMethod(n::Int) = getPMFRGMethod(Val(n))
 
+abstract type AbstractVertex{T} end
+
 """Struct containing information about four-point vertices"""
-struct VertexType{T}
+struct HeisenbergVertex{T} <: AbstractVertex{T}
     a::Array{T,4}
     b::Array{T,4}
     c::Array{T,4}
 end
 
 
-function VertexType(VDims::Tuple, type)
-    return VertexType(
+function HeisenbergVertex(VDims::Tuple, type)
+    return HeisenbergVertex(
         zeros(type, VDims), # Gamma_a
         zeros(type, VDims), # Gamma_b
         zeros(type, VDims), # Gamma_c
@@ -107,7 +109,7 @@ function VertexType(VDims::Tuple, type)
 end
 getVDims(Par::PMFRGParams) =
     (Par.System.Npairs, Par.NumericalParams.N, Par.NumericalParams.N, Par.NumericalParams.N)
-VertexType(Par::PMFRGParams) = VertexType(getVDims(Par), _getFloatType(Par))
+HeisenbergVertex(Par::PMFRGParams) = HeisenbergVertex(getVDims(Par), _getFloatType(Par))
 
 function setToBareVertex!(Gammac::AbstractArray{T,4}, couplings::AbstractVector) where {T}
     for Rj in eachindex(couplings, axes(Gammac, 1))
@@ -116,38 +118,39 @@ function setToBareVertex!(Gammac::AbstractArray{T,4}, couplings::AbstractVector)
     return Gammac
 end
 
-function setToBareVertex!(Gamma::VertexType, couplings::AbstractVector)
+function setToBareVertex!(Gamma::HeisenbergVertex, couplings::AbstractVector)
     Gamma.a .= 0.0
     Gamma.b .= 0.0
     setToBareVertex!(Gamma.c, couplings)
     return Gamma
 end
 
-setToBareVertex!(Gamma::VertexType, Par) = setToBareVertex!(Gamma, Par.System.couplings)
+setToBareVertex!(Gamma::HeisenbergVertex, Par) =
+    setToBareVertex!(Gamma, Par.System.couplings)
 
 """Allocates a frequency-dependent vertex type and initializes it with the bare vertex"""
-BareVertex_Freq(Par) = setToBareVertex!(VertexType(Par), Par.System.couplings)
+BareVertex_Freq(Par) = setToBareVertex!(HeisenbergVertex(Par), Par.System.couplings)
 
 """Stores all information about the bare vertex (without frequencies)"""
-struct BareVertexType{T}
+struct BareHeisenbergVertex{T}
     c::Vector{T}
 end
 
-BareVertexType(Par::PMFRGParams) =
-    BareVertexType(-convert.(_getFloatType(Par), Par.System.couplings))
+BareHeisenbergVertex(Par::PMFRGParams) =
+    BareHeisenbergVertex(-convert.(_getFloatType(Par), Par.System.couplings))
 
 """Struct containing information about the (physical) ODE State, i.e. vertices"""
 struct StateType{T}
     f_int::Array{T,1}
     iSigma::Array{T,2}
-    Gamma::VertexType{T}
+    Gamma::HeisenbergVertex{T}
 end
 
 function StateType(NUnique::Int, NiSigma::Int, VDims::Tuple, type = Float64::Type)
     return StateType(
         zeros(type, NUnique), # fint
         zeros(type, NUnique, NiSigma), # iSigma
-        VertexType(VDims, type),
+        HeisenbergVertex(VDims, type),
     )
 end
 
@@ -159,10 +162,13 @@ StateType(Par::PMFRGParams) = StateType(
 )
 
 StateType(f_int, iSigma, Gammaa, Gammab, Gammac) =
-    StateType(f_int, iSigma, VertexType(Gammaa, Gammab, Gammac))
+    StateType(f_int, iSigma, HeisenbergVertex(Gammaa, Gammab, Gammac))
+
+
+abstract type AbstractBubble{T} end
 
 """Struct storing information about Bubble functions, i.e. rhs derivatives of vertex flow equations."""
-struct BubbleType{T}
+struct BubbleType{T} <: AbstractBubble{T}
     a::Array{T,4} #"a" type bubble
     b::Array{T,4}
     c::Array{T,4}
@@ -185,11 +191,11 @@ function BubbleType(VDims::Tuple, type = Float64)
     )
 end
 
-const VertexOrBubble = Union{StateType,BubbleType,VertexType}
+const VertexOrBubble = Union{StateType,BubbleType,HeisenbergVertex}
 
 BubbleType(Par::PMFRGParams) = BubbleType(getVDims(Par), _getFloatType(Par))
 
-function constructBubbleFromVertex!(B::BubbleType, Gamma::VertexType)
+function constructBubbleFromVertex!(B::BubbleType, Gamma::HeisenbergVertex)
     B.a .= Gamma.a
     B.b .= Gamma.b
     B.c .= Gamma.c
@@ -205,7 +211,7 @@ function constructBubbleFromVertex!(B::BubbleType, Gamma::VertexType)
     end
     return B
 end
-constructBubbleFromVertex(Gamma::VertexType) =
+constructBubbleFromVertex(Gamma::HeisenbergVertex) =
     constructBubbleFromVertex!(BubbleType(size(Gamma.a)), Gamma)
 
 """Struct containing the observables that are saved at every step"""

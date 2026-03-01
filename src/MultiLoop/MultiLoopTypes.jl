@@ -105,8 +105,8 @@ struct ParquetWorkspace{T,Buff,P<:PMFRGParams} <: PMFRGWorkspace
     State::StateType{T} #Stores the current step of iteration
     OldState::StateType{T} #Stores the last step of iteration
 
-    Gamma0::BareVertexType{T} #Stores the bare vertex
-    I::VertexType{T} #Stores the irreducible vertex
+    Gamma0::BareHeisenbergVertex{T} #Stores the bare vertex
+    I::HeisenbergVertex{T} #Stores the irreducible vertex
 
     X::BubbleType{T} #Stores the actual bubble function X = B0 + BX
 
@@ -141,7 +141,7 @@ function SetupParquet(Par::ParquetParams)
     Workspace = ParquetWorkspace(
         StateType(Par),
         StateType(Par),
-        BareVertexType(Par),
+        BareHeisenbergVertex(Par),
         IrrVertex,
         BubbleType(Par),
         BubbleType(Par),

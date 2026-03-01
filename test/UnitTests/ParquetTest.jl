@@ -174,7 +174,7 @@ function test_BSE(Par::PMFRG.ParquetParams)
     Gamma1 = Workspace1.State.Gamma
     Gamma2 = Workspace2.State.Gamma
     # @testset "BSE test" begin
-    #     for k in fieldnames(VertexType)
+    #     for k in fieldnames(HeisenbergVertex)
     #         G1,G2 = getfield.((Gamma1,Gamma2),Ref(k))
     #         for i in eachindex(G1,G2)
     #             @test G1[i] ≈ G2[i]

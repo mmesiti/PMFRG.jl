@@ -56,7 +56,7 @@ function h5deserialize(f::HDF5.File, root::String, id::Int)
         State = PMFRG.StateType(
             read(f["$root/$id/State/f_int"]),
             read(f["$root/$id/State/γ"]), # This might need change
-            PMFRG.VertexType(
+            PMFRG.HeisenbergVertex(
                 read(f["$root/$id/State/Γ/a"]),# This might need change
                 read(f["$root/$id/State/Γ/b"]),# This might need change
                 read(f["$root/$id/State/Γ/c"]),# This might need change
@@ -65,7 +65,7 @@ function h5deserialize(f::HDF5.File, root::String, id::Int)
         Deriv = PMFRG.StateType(
             read(f["$root/$id/Deriv/f_int"]),
             read(f["$root/$id/Deriv/γ"]), # This might need change
-            PMFRG.VertexType(
+            PMFRG.HeisenbergVertex(
                 read(f["$root/$id/Deriv/Γ/a"]),# This might need change
                 read(f["$root/$id/Deriv/Γ/b"]),# This might need change
                 read(f["$root/$id/Deriv/Γ/c"]),# This might need change

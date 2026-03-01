@@ -134,7 +134,7 @@ function getXFromBubbles!(X::BubbleType, B0::BubbleType, BX::BubbleType)
     return X
 end
 
-function getVertexFromChannels!(Gamma::VertexType, I::VertexType, X::BubbleType)
+function getVertexFromChannels!(Gamma::HeisenbergVertex, I::HeisenbergVertex, X::BubbleType)
     Threads.@threads :static for iu in axes(Gamma.a, 4)
         for it in axes(Gamma.a, 3), is in axes(Gamma.a, 2), Rij in axes(Gamma.a, 1)
             Gamma.a[Rij, is, it, iu] =

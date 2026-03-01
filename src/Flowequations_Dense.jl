@@ -92,7 +92,7 @@ end
 """
 Computes a single-particle (i.e. self-energy) bubble. Can only be used if argument is a vertex
 """
-function addTo1PartBubble!(DiSigma::AbstractArray, Gamma::VertexType, Prop, Par)
+function addTo1PartBubble!(DiSigma::AbstractArray, Gamma::HeisenbergVertex, Prop, Par)
     invpairs = Par.System.invpairs
     # @warn "addTo1PartBubble! for vertices is not tested yet!"
     @inline Gammaa_(Rij, s, t, u) =
@@ -536,7 +536,7 @@ function symmetrizeBubble!(X::BubbleType, Par::PMFRGParams)
     @tturbo X.Td .= X.Ta .- X.Tb .- X.Tc
 end
 
-function addToVertexFromBubble!(Gamma::VertexType, X::BubbleType)
+function addToVertexFromBubble!(Gamma::HeisenbergVertex, X::BubbleType)
     Threads.@threads :static for iu in axes(Gamma.a, 4)
         for it in axes(Gamma.a, 3), is in axes(Gamma.a, 2), Rij in axes(Gamma.a, 1)
             Gamma.a[Rij, is, it, iu] +=
@@ -551,7 +551,7 @@ function addToVertexFromBubble!(Gamma::VertexType, X::BubbleType)
 end
 
 
-function symmetrizeVertex!(Gamma::VertexType, Par)
+function symmetrizeVertex!(Gamma::HeisenbergVertex, Par)
     N = Par.NumericalParams.N
     Threads.@threads :static for iu = 1:N
         for it = 1:N, is = 1:N, R in Par.System.OnsitePairs
