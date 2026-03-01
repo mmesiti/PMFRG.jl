@@ -6,7 +6,7 @@ function get_sign_iw(nw::Integer, N::Integer)
 end
 
 """Returns self energy evaluated at the appropriate frequency"""
-function iSigma_(iSigma::AbstractArray, x::Integer, nw::Integer)
+function iSigma_(iSigma, x::Integer, nw::Integer)
     NiSigma = size(iSigma, 2)
     s = 1
     if nw < 0

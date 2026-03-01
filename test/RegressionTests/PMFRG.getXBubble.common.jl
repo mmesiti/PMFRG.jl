@@ -98,14 +98,14 @@ function h5serialize!(
 
     # S
     f["$root/$id/State/f_int", blosc = 9] = S.f_int
-    f["$root/$id/State/iSigma", blosc = 9] = S.iSigma
+    f["$root/$id/State/iSigma", blosc = 9] = S.iSigma.data
     f["$root/$id/State/Γ/a", blosc = 9] = S.Gamma.a
     f["$root/$id/State/Γ/b", blosc = 9] = S.Gamma.b
     f["$root/$id/State/Γ/c", blosc = 9] = S.Gamma.c
 
     # D
     f["$root/$id/Deriv/f_int", blosc = 9] = D.f_int
-    f["$root/$id/Deriv/iSigma", blosc = 9] = D.iSigma # This might need change
+    f["$root/$id/Deriv/iSigma", blosc = 9] = D.iSigma.data
     f["$root/$id/Deriv/Γ/a", blosc = 9] = D.Gamma.a
     f["$root/$id/Deriv/Γ/b", blosc = 9] = D.Gamma.b
     f["$root/$id/Deriv/Γ/c", blosc = 9] = D.Gamma.c

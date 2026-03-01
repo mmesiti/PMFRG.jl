@@ -92,6 +92,33 @@ getPMFRGMethod(n::Int) = getPMFRGMethod(Val(n))
 
 abstract type AbstractVertex{T} end
 
+abstract type AbstractSigma{T} end
+
+struct HeisenbergSigma{T} <: AbstractSigma{T}
+    data::Array{T,2}
+end
+
+HeisenbergSigma(NUnique::Int, NiSigma::Int, type = Float64) =
+    HeisenbergSigma(zeros(type, NUnique, NiSigma))
+
+Base.size(s::HeisenbergSigma) = size(s.data)
+Base.size(s::HeisenbergSigma, i::Int) = size(s.data, i)
+Base.IndexStyle(::Type{<:HeisenbergSigma}) = IndexLinear()
+Base.getindex(s::HeisenbergSigma, i...) = getindex(s.data, i...)
+Base.setindex!(s::HeisenbergSigma, val, i...) = setindex!(s.data, val, i...)
+Base.fill!(s::HeisenbergSigma, x) = (fill!(s.data, x); s)
+Base.copy(s::HeisenbergSigma) = HeisenbergSigma(copy(s.data))
+Base.axes(s::HeisenbergSigma, i::Int) = axes(s.data, i)
+Base.length(s::HeisenbergSigma) = length(s.data)
+Base.eltype(::HeisenbergSigma{T}) where {T} = T
+Base.eachindex(s::HeisenbergSigma) = eachindex(s.data)
+Base.eachindex(a::HeisenbergSigma, b::HeisenbergSigma) = eachindex(a.data, b.data)
+Base.similar(s::HeisenbergSigma, ::Type{T}, dims::Dims) where {T} =
+    HeisenbergSigma(similar(s.data, T, dims))
+Base.similar(s::HeisenbergSigma) = HeisenbergSigma(similar(s.data))
+Base.maximum(s::HeisenbergSigma) = maximum(s.data)
+Base.maximum(f, s::HeisenbergSigma; kwargs...) = maximum(f, s.data; kwargs...)
+
 """Struct containing information about four-point vertices"""
 struct HeisenbergVertex{T} <: AbstractVertex{T}
     a::Array{T,4}
@@ -142,14 +169,14 @@ BareHeisenbergVertex(Par::PMFRGParams) =
 """Struct containing information about the (physical) ODE State, i.e. vertices"""
 struct StateType{T}
     f_int::Array{T,1}
-    iSigma::Array{T,2}
+    iSigma::HeisenbergSigma{T}
     Gamma::HeisenbergVertex{T}
 end
 
 function StateType(NUnique::Int, NiSigma::Int, VDims::Tuple, type = Float64::Type)
     return StateType(
         zeros(type, NUnique), # fint
-        zeros(type, NUnique, NiSigma), # iSigma
+        HeisenbergSigma(NUnique, NiSigma, type), # iSigma
         HeisenbergVertex(VDims, type),
     )
 end
@@ -161,8 +188,12 @@ StateType(Par::PMFRGParams) = StateType(
     _getFloatType(Par),
 )
 
-StateType(f_int, iSigma, Gammaa, Gammab, Gammac) =
+StateType(f_int, iSigma::Array{T,2}, Gamma::HeisenbergVertex) where {T} =
+    StateType(f_int, HeisenbergSigma(iSigma), Gamma)
+StateType(f_int, iSigma::HeisenbergSigma, Gammaa, Gammab, Gammac) =
     StateType(f_int, iSigma, HeisenbergVertex(Gammaa, Gammab, Gammac))
+StateType(f_int, iSigma::Array{T,2}, Gammaa, Gammab, Gammac) where {T} =
+    StateType(f_int, HeisenbergSigma(iSigma), HeisenbergVertex(Gammaa, Gammab, Gammac))
 
 
 abstract type AbstractBubble{T} end
@@ -239,5 +270,5 @@ end
 VertexBufferType(type, Npairs) = VertexBufferType((zeros(type, Npairs) for _ = 1:8)...)
 ##
 RecursiveArrayTools.ArrayPartition(x::StateType) =
-    ArrayPartition(x.f_int, x.iSigma, x.Gamma.a, x.Gamma.b, x.Gamma.c)
+    ArrayPartition(x.f_int, x.iSigma.data, x.Gamma.a, x.Gamma.b, x.Gamma.c)
 StateType(Arr::ArrayPartition) = StateType(Arr.x...)

@@ -100,6 +100,10 @@ function dampen!(StateArr::AbstractArray, OldStateArr::AbstractArray, epsilon::R
     @. StateArr = (1 - epsilon) * OldStateArr + epsilon * StateArr
 end
 
+function dampen!(s::HeisenbergSigma, old::HeisenbergSigma, epsilon::Real)
+    @. s.data = (1 - epsilon) * old.data + epsilon * s.data
+end
+
 function constructPropagatorFunction(iSigma, Lam, Par)
     T = Par.NumericalParams.T
     NUnique = Par.System.NUnique
@@ -232,7 +236,7 @@ end
 anyisnan(A::ArrayPartition) = any((any(isnan, i) for i in A.x))
 
 
-function iterateSDE_FP!(iSigma, Gamma, B0, Gamma0, Lam, Par, Buffer)
+function iterateSDE_FP!(iSigma::HeisenbergSigma, Gamma, B0, Gamma0, Lam, Par, Buffer)
     (; SDE_iters, SDE_vel, SDE_epsilon) = Par.Options
     T = Par.NumericalParams.T
     function FixedPointFunction!(iSigma, iSigmaOld)
@@ -248,13 +252,13 @@ function iterateSDE_FP!(iSigma, Gamma, B0, Gamma0, Lam, Par, Buffer)
 
     s = afps!(
         FixedPointFunction!,
-        iSigma,
+        iSigma.data,
         iters = SDE_iters,
         vel = SDE_vel,
         ep = SDE_epsilon,
         tol = Par.Options.SDE_tolerance,
     )
-    iSigma .= s.x
+    iSigma.data .= s.x
     # FixedPointFunction!(State.iSigma,OldState.iSigma)
     # println(maximum(iSigma))
     # println(maximum(ArrayPartition(Gamma.a,Gamma.b,Gamma.c)))
@@ -276,12 +280,12 @@ function getObservables(::Type{Observables}, Workspace::ParquetWorkspace, Lam)
     MaxVa = maximum(abs, State.Gamma.a, dims = (2, 3, 4, 5))[:, 1, 1, 1]
     MaxVb = maximum(abs, State.Gamma.b, dims = (2, 3, 4, 5))[:, 1, 1, 1]
     MaxVc = maximum(abs, State.Gamma.c, dims = (2, 3, 4, 5))[:, 1, 1, 1]
-    return Observables(chi, copy(State.iSigma), copy(State.f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
+    return Observables(chi, copy(State.iSigma.data), copy(State.f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
 end
 
 # writeOutput(St::StateType,Obs,Lam,Par) = println(Obs)
 writeOutput(St::StateType, Obs, Lam, Par) =
-    writeOutput(St.f_int, St.iSigma, St.Gamma.a, St.Gamma.b, St.Gamma.c, Obs, Lam, Par)
+    writeOutput(St.f_int, St.iSigma.data, St.Gamma.a, St.Gamma.b, St.Gamma.c, Obs, Lam, Par)
 
 function modifyWorkspace(Workspace::ParquetWorkspace; kwargs...)
     NewPar = modifyParams(Workspace.Par; kwargs...)

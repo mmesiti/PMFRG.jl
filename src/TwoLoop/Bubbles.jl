@@ -441,7 +441,7 @@ end
     Props,
 ) = addBLTilde!(B, Gamma0L, Gamma, is, it, iu, nwpr, Par, Props)
 
-function compute1PartBubble_BS!(DiSigma::AbstractArray, Gamma, Gamma0, Prop, Par)
+function compute1PartBubble_BS!(DiSigma, Gamma, Gamma0, Prop, Par)
     setZero!(DiSigma)
 
     (; T, NiSigma, lenIntw_acc, np_vec_iSigma) = Par.NumericalParams

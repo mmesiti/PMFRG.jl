@@ -13,6 +13,11 @@ function writeTo!(A::AbstractArray, B::AbstractArray)
     return A
 end
 
+function writeTo!(A::HeisenbergSigma, B::HeisenbergSigma)
+    A.data .= B.data
+    return A
+end
+
 """Computes total difference between two objects of type T by summing up the distance of all elements"""
 function squareDist(Gamma1::T, Gamma2::T) where {T<:VertexOrBubble}
     d = 0.0
@@ -32,6 +37,8 @@ function squareDist(a::AbstractArray, b::AbstractArray)
     return d
 end
 
+squareDist(a::HeisenbergSigma, b::HeisenbergSigma) = squareDist(a.data, b.data)
+
 @inline squareDist(a::Number, b::Number) = abs2(a - b)
 @inline dist(a, b) = sqrt(squareDist(a, b))
 
@@ -48,6 +55,8 @@ function squareNorm(A::T) where {T<:VertexOrBubble}
     return s
 end
 
+SpinFRGLattices.squareNorm(a::HeisenbergSigma) = SpinFRGLattices.squareNorm(a.data)
+
 function norm(A)
     return sqrt(squareNorm(A))
 end
@@ -60,6 +69,7 @@ end
 
 """fills an array with zeros"""
 setZero!(a::AbstractArray{T,N}) where {T,N} = @tturbo a .= zero(T)
+setZero!(s::HeisenbergSigma{T}) where {T} = (@tturbo s.data .= zero(T))
 
 function setZero!(PartArr::ArrayPartition{T}) where {T}
     for arr in PartArr.x

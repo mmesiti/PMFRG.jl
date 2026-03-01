@@ -45,13 +45,7 @@ end
 """
 Computes a single-particle (i.e. self-energy) bubble. Allows specification of function type, i.e. what vertices are used since this is different if a bubble function is inserted as opposed to a vertex.
 """
-function addTo1PartBubble!(
-    DiSigma::AbstractArray,
-    XT1_::Function,
-    XT2_::Function,
-    Prop,
-    Par,
-)
+function addTo1PartBubble!(DiSigma, XT1_::Function, XT2_::Function, Prop, Par)
 
     (; T, N, NiSigma, lenIntw_acc, np_vec_iSigma) = Par.NumericalParams
     (; siteSum, invpairs, Nsum, OnsitePairs) = Par.System
@@ -80,7 +74,7 @@ end
 """
 Computes a single-particle (i.e. self-energy) bubble. Can only be used if B is a bubble function
 """
-function addTo1PartBubble!(DiSigma::AbstractArray, X::BubbleType, Prop, Par)
+function addTo1PartBubble!(DiSigma, X::BubbleType, Prop, Par)
     invpairs = Par.System.invpairs
     @inline XTa_(Rij, s, t, u) =
         XT_(X.Ta, X.Ta, Rij, s, t, u, invpairs[Rij], Par.NumericalParams.N)
@@ -92,7 +86,7 @@ end
 """
 Computes a single-particle (i.e. self-energy) bubble. Can only be used if argument is a vertex
 """
-function addTo1PartBubble!(DiSigma::AbstractArray, Gamma::HeisenbergVertex, Prop, Par)
+function addTo1PartBubble!(DiSigma, Gamma::HeisenbergVertex, Prop, Par)
     invpairs = Par.System.invpairs
     # @warn "addTo1PartBubble! for vertices is not tested yet!"
     @inline Gammaa_(Rij, s, t, u) =
@@ -102,7 +96,7 @@ function addTo1PartBubble!(DiSigma::AbstractArray, Gamma::HeisenbergVertex, Prop
     addTo1PartBubble!(DiSigma, Gammaa_, Gammab_, Prop, Par)
 end
 
-function compute1PartBubble!(DiSigma::AbstractArray, GammaorX, Prop, Par)
+function compute1PartBubble!(DiSigma, GammaorX, Prop, Par)
     setZero!(DiSigma)
     addTo1PartBubble!(DiSigma, GammaorX, Prop, Par)
 end
@@ -566,13 +560,7 @@ getChi(State::ArrayPartition, Lam::Real, Par::PMFRGParams, Numax) =
 getChi(State::ArrayPartition, Lam::Real, Par::PMFRGParams) =
     getChi(State.x[2], State.x[5], Lam, Par)
 
-function getChi(
-    iSigma::AbstractArray,
-    Gammac::AbstractArray,
-    Lam::Real,
-    Par::PMFRGParams,
-    Numax,
-)
+function getChi(iSigma, Gammac::AbstractArray, Lam::Real, Par::PMFRGParams, Numax)
     (; T, N, lenIntw_acc, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
@@ -603,7 +591,7 @@ function getChi(
     return (Chi)
 end
 
-function getChi(iSigma::AbstractArray, Gammac::AbstractArray, Lam::Real, Par::PMFRGParams)
+function getChi(iSigma, Gammac::AbstractArray, Lam::Real, Par::PMFRGParams)
     (; T, N, lenIntw_acc) = Par.NumericalParams
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
