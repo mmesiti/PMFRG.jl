@@ -7,7 +7,7 @@ function addBL!(
     B::BubbleType{T},
     XL::BubbleType,
     XR::BubbleType,
-    Γ::VertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -23,7 +23,7 @@ function addBL!(
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, Nsum, siteSum, invpairs) = Par.System
 
-    BufferFiller!(VBuffer, XBuffer, XL, XR, Γ, is, it, iu, nwpr, Par)
+    BufferFiller!(VBuffer, XBuffer, XL, XR, Gamma, is, it, iu, nwpr, Par)
 
     (; Va34, Vb34, Vc34, Vc43) = VBuffer
     (; XTa21, XTb21, XTc21, XTd21) = XBuffer
@@ -65,7 +65,7 @@ function addBLTilde!(
     B::BubbleType,
     XL::BubbleType,
     XR::BubbleType,
-    Γ::VertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -78,9 +78,9 @@ function addBLTilde!(
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
     (; N, np_vec) = Par.NumericalParams
 
-    @inline Va_(Rij, s, t, u) = V_(Γ.a, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vb_(Rij, s, t, u) = V_(Γ.b, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vc_(Rij, s, t, u) = V_(Γ.c, Rij, s, t, u, invpairs[Rij], N)
+    @inline Va_(Rij, s, t, u) = V_(Gamma.a, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vb_(Rij, s, t, u) = V_(Gamma.b, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vc_(Rij, s, t, u) = V_(Gamma.c, Rij, s, t, u, invpairs[Rij], N)
 
     @inline XLa_(Rij, s, t, u) = X_(XL.a, XR.a, Rij, s, t, u, invpairs[Rij], N)
     @inline XLb_(Rij, s, t, u) = X_(XL.b, XR.b, Rij, s, t, u, invpairs[Rij], N)
@@ -141,7 +141,7 @@ function addBL!(
     B::BubbleType{T},
     XL::BubbleType,
     XR::BubbleType,
-    Γ::VertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -156,7 +156,7 @@ function addBL!(
 
     (; Npairs, Nsum, siteSum) = Par.System
 
-    BufferFiller!(VBuffer, XBuffer, XL, XR, Γ, is, it, iu, nwpr, Par)
+    BufferFiller!(VBuffer, XBuffer, XL, XR, Gamma, is, it, iu, nwpr, Par)
 
     (; Va34, Vb34, Vc34, Vc43) = VBuffer
     (; XTa21, XTb21, XTc21, XTd21) = XBuffer
@@ -196,7 +196,7 @@ function addBLTilde!(
     B::BubbleType,
     XL::BubbleType,
     XR::BubbleType,
-    Γ::VertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -209,9 +209,9 @@ function addBLTilde!(
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
     (; N, np_vec) = Par.NumericalParams
 
-    @inline Va_(Rij, s, t, u) = V_(Γ.a, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vb_(Rij, s, t, u) = V_(Γ.b, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vc_(Rij, s, t, u) = V_(Γ.c, Rij, s, t, u, invpairs[Rij], N)
+    @inline Va_(Rij, s, t, u) = V_(Gamma.a, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vb_(Rij, s, t, u) = V_(Gamma.b, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vc_(Rij, s, t, u) = V_(Gamma.c, Rij, s, t, u, invpairs[Rij], N)
 
     @inline XLa_(Rij, s, t, u) = X_(XL.a, XR.a, Rij, s, t, u, invpairs[Rij], N)
     @inline XLb_(Rij, s, t, u) = X_(XL.b, XR.b, Rij, s, t, u, invpairs[Rij], N)
@@ -269,7 +269,7 @@ adds to ResultBubble given the vertex as well as a bubble inserted on the left. 
     B::BubbleType,
     XL::BubbleType,
     XR::BubbleType,
-    Γ::VertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -283,7 +283,7 @@ adds to ResultBubble given the vertex as well as a bubble inserted on the left. 
         B::BubbleType,
         XL::BubbleType,
         XR::BubbleType,
-        Γ::VertexType,
+        Gamma::VertexType,
         is::Integer,
         it::Integer,
         iu::Integer,
@@ -301,7 +301,7 @@ end
     B::BubbleType,
     XL::BubbleType,
     XR::BubbleType,
-    Γ::VertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -313,7 +313,7 @@ end
         B::BubbleType,
         XL::BubbleType,
         XR::BubbleType,
-        Γ::VertexType,
+        Gamma::VertexType,
         is::Integer,
         it::Integer,
         iu::Integer,
@@ -327,8 +327,8 @@ end
 
 function addBL!(
     B::BubbleType{T},
-    Γ0::BareVertexType,
-    Γ::VertexType,
+    Gamma0::BareVertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -339,7 +339,7 @@ function addBL!(
 ) where {T}
     (; Npairs, Nsum, siteSum) = Par.System
 
-    fillBufferL!(Buffer, Γ0, Γ, is, it, iu, nwpr, Par)
+    fillBufferL!(Buffer, Gamma0, Gamma, is, it, iu, nwpr, Par)
 
     (; Vc34, Vc43) = Buffer
     S_ki = siteSum.ki
@@ -356,7 +356,7 @@ function addBL!(
 
             Ptm = Props[xk] * m
 
-            Bc_sum += (Vc43[kj] + Vc34[kj]) * Ptm * Γ0.c[ki]
+            Bc_sum += (Vc43[kj] + Vc34[kj]) * Ptm * Gamma0.c[ki]
         end
         B.c[Rij, is, it, iu] += Bc_sum
     end
@@ -365,9 +365,9 @@ end
 
 @inline addBL!(
     B::BubbleType,
-    Γ0L::BareVertexType,
-    Γ0R::BareVertexType,
-    Γ::VertexType,
+    Gamma0L::BareVertexType,
+    Gamma0R::BareVertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -376,13 +376,13 @@ end
     Props,
     Buffer::VertexBufferType,
     XB::BubbleBufferType,
-) = addBL!(B, Γ0L, Γ, is, it, iu, nwpr, Par, Props, Buffer)
+) = addBL!(B, Gamma0L, Gamma, is, it, iu, nwpr, Par, Props, Buffer)
 
 
 function addBLTilde!(
     B::BubbleType,
-    Γ0::BareVertexType,
-    Γ::VertexType,
+    Gamma0::BareVertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -395,9 +395,9 @@ function addBLTilde!(
     (; N, np_vec) = Par.NumericalParams
 
 
-    @inline Va_(Rij, s, t, u) = V_(Γ.a, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vb_(Rij, s, t, u) = V_(Γ.b, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vc_(Rij, s, t, u) = V_(Γ.c, Rij, s, t, u, invpairs[Rij], N)
+    @inline Va_(Rij, s, t, u) = V_(Gamma.a, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vb_(Rij, s, t, u) = V_(Gamma.b, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vc_(Rij, s, t, u) = V_(Gamma.c, Rij, s, t, u, invpairs[Rij], N)
 
     ns = np_vec[is]
     nt = np_vec[it]
@@ -412,46 +412,47 @@ function addBLTilde!(
         (; xi, xj) = PairTypes[Rij]
 
         B.Ta[Rij, is, it, iu] +=
-            Props[xj, xi] * 2 * Vc_(Rij, wmw4, ns, wmw3) * Γ0.c[Rij] +
-            Props[xi, xj] * 2 * Vc_(Rji, wmw3, ns, wmw4) * Γ0.c[Rji]
+            Props[xj, xi] * 2 * Vc_(Rij, wmw4, ns, wmw3) * Gamma0.c[Rij] +
+            Props[xi, xj] * 2 * Vc_(Rji, wmw3, ns, wmw4) * Gamma0.c[Rji]
 
         B.Tb[Rij, is, it, iu] +=
             Props[xj, xi] *
             (Va_(Rij, wmw4, ns, wmw3) + Vc_(Rij, wmw4, ns, wmw3)) *
-            Γ0.c[Rij] +
+            Gamma0.c[Rij] +
             Props[xi, xj] *
             (Va_(Rji, wmw3, ns, wmw4) + Vc_(Rji, wmw3, ns, wmw4)) *
-            Γ0.c[Rji]
+            Gamma0.c[Rji]
 
         B.Tc[Rij, is, it, iu] +=
-            Props[xj, xi] * Vc_(Rij, wmw4, wmw3, ns) * Γ0.c[Rij] +
-            Props[xi, xj] * Vc_(Rji, wmw3, wmw4, ns) * Γ0.c[Rji]
+            Props[xj, xi] * Vc_(Rij, wmw4, wmw3, ns) * Gamma0.c[Rij] +
+            Props[xi, xj] * Vc_(Rji, wmw3, wmw4, ns) * Gamma0.c[Rji]
     end
 end
 @inline addBLTilde!(
     B::BubbleType,
-    Γ0L::BareVertexType,
-    Γ0R::BareVertexType,
-    Γ::VertexType,
+    Gamma0L::BareVertexType,
+    Gamma0R::BareVertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
     nwpr::Integer,
     Par::PMFRGParams,
     Props,
-) = addBLTilde!(B, Γ0L, Γ, is, it, iu, nwpr, Par, Props)
+) = addBLTilde!(B, Gamma0L, Gamma, is, it, iu, nwpr, Par, Props)
 
-function compute1PartBubble_BS!(Dgamma::AbstractArray, Γ, Gamma0, Prop, Par)
-    setZero!(Dgamma)
+function compute1PartBubble_BS!(DiSigma::AbstractArray, Gamma, Gamma0, Prop, Par)
+    setZero!(DiSigma)
 
-    (; T, Ngamma, lenIntw_acc, np_vec_gamma) = Par.NumericalParams
+    (; T, NiSigma, lenIntw_acc, np_vec_iSigma) = Par.NumericalParams
     (; siteSum, invpairs, Nsum, OnsitePairs) = Par.System
 
-    @inline Γc_(Rij, s, t, u) = V_(Γ.c, Rij, s, t, u, invpairs[Rij], Par.NumericalParams.N) # cTilde corresponds to b type vertex!
+    @inline Gammac_(Rij, s, t, u) =
+        V_(Gamma.c, Rij, s, t, u, invpairs[Rij], Par.NumericalParams.N) # cTilde corresponds to b type vertex!
 
 
-    Threads.@threads :static for iw1 = 1:Ngamma
-        nw1 = np_vec_gamma[iw1]
+    Threads.@threads :static for iw1 = 1:NiSigma
+        nw1 = np_vec_iSigma[iw1]
         for (x, Rx) in enumerate(OnsitePairs)
             jsum = 0.0
             for k_spl = 1:Nsum[Rx]
@@ -468,7 +469,7 @@ function compute1PartBubble_BS!(Dgamma::AbstractArray, Γ, Gamma0, Prop, Par)
                         jsum +=
                             fac *
                             4 *
-                            Γc_(ik, wpwpr, w1mw, w1mwpr) *
+                            Gammac_(ik, wpwpr, w1mw, w1mwpr) *
                             Gamma0.c[ik] *
                             Prop(xk, nw) *
                             Prop(xk, nwpr) *
@@ -477,8 +478,8 @@ function compute1PartBubble_BS!(Dgamma::AbstractArray, Γ, Gamma0, Prop, Par)
                     end
                 end
             end
-            Dgamma[x, iw1] += -T^2 * jsum * 6^2 #6^2 since each Prop contains factor of 1/6
+            DiSigma[x, iw1] += -T^2 * jsum * 6^2 #6^2 since each Prop contains factor of 1/6
         end
     end
-    return Dgamma
+    return DiSigma
 end

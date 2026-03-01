@@ -11,10 +11,10 @@ function getDeriv!(Deriv, State, setup, Lam)
         @timeit_debug "symmetrizeBubble!" symmetrizeBubble!(Workspace.X, Par)
 
         @timeit_debug "addToVertexFromBubble!" addToVertexFromBubble!(
-            Workspace.Deriv.Γ,
+            Workspace.Deriv.Gamma,
             Workspace.X,
         )
-        @timeit_debug "symmetrizeVertex!" symmetrizeVertex!(Workspace.Deriv.Γ, Par)
+        @timeit_debug "symmetrizeVertex!" symmetrizeVertex!(Workspace.Deriv.Gamma, Par)
         flush(stdout)
     end
 
@@ -26,9 +26,9 @@ function getDFint!(Workspace::PMFRGWorkspace, Lam::Real)
     (; T, lenIntw_acc) = Par.NumericalParams
     NUnique = Par.System.NUnique
 
-    @inline γ(x, nw) = gamma_(State.γ, x, nw)
-    @inline iG(x, nw) = iG_(State.γ, x, Lam, nw, T)
-    @inline iS(x, nw) = iS_(State.γ, x, Lam, nw, T)
+    @inline iSigma(x, nw) = iSigma_(State.iSigma, x, nw)
+    @inline iG(x, nw) = iG_(State.iSigma, x, Lam, nw, T)
+    @inline iS(x, nw) = iS_(State.iSigma, x, Lam, nw, T)
 
     Theta(Lam, w) = w^2 / (w^2 + Lam^2)
 
@@ -36,7 +36,7 @@ function getDFint!(Workspace::PMFRGWorkspace, Lam::Real)
         sumres = 0.0
         for nw = (-lenIntw_acc):(lenIntw_acc-1)
             w = get_w(nw, T)
-            sumres += iS(x, nw) / iG(x, nw) * Theta(Lam, w) * γ(x, nw) / w
+            sumres += iS(x, nw) / iG(x, nw) * Theta(Lam, w) * iSigma(x, nw) / w
         end
         Deriv.f_int[x] = -3 / 2 * T * sumres
     end
@@ -45,13 +45,19 @@ end
 """
 Computes a single-particle (i.e. self-energy) bubble. Allows specification of function type, i.e. what vertices are used since this is different if a bubble function is inserted as opposed to a vertex.
 """
-function addTo1PartBubble!(Dgamma::AbstractArray, XT1_::Function, XT2_::Function, Prop, Par)
+function addTo1PartBubble!(
+    DiSigma::AbstractArray,
+    XT1_::Function,
+    XT2_::Function,
+    Prop,
+    Par,
+)
 
-    (; T, N, Ngamma, lenIntw_acc, np_vec_gamma) = Par.NumericalParams
+    (; T, N, NiSigma, lenIntw_acc, np_vec_iSigma) = Par.NumericalParams
     (; siteSum, invpairs, Nsum, OnsitePairs) = Par.System
 
-    Threads.@threads :static for iw1 = 1:Ngamma
-        nw1 = np_vec_gamma[iw1]
+    Threads.@threads :static for iw1 = 1:NiSigma
+        nw1 = np_vec_iSigma[iw1]
         for (x, Rx) in enumerate(OnsitePairs)
             for nw = (-lenIntw_acc):(lenIntw_acc-1)
                 jsum = 0.0
@@ -64,44 +70,46 @@ function addTo1PartBubble!(Dgamma::AbstractArray, XT1_::Function, XT2_::Function
                         Prop(xk, nw) *
                         m
                 end
-                Dgamma[x, iw1] += -T * jsum #For the self-energy derivative, the factor of 1/2 must be in the propagator
+                DiSigma[x, iw1] += -T * jsum #For the self-energy derivative, the factor of 1/2 must be in the propagator
             end
         end
     end
-    return Dgamma
+    return DiSigma
 end
 
 """
 Computes a single-particle (i.e. self-energy) bubble. Can only be used if B is a bubble function
 """
-function addTo1PartBubble!(Dgamma::AbstractArray, X::BubbleType, Prop, Par)
+function addTo1PartBubble!(DiSigma::AbstractArray, X::BubbleType, Prop, Par)
     invpairs = Par.System.invpairs
     @inline XTa_(Rij, s, t, u) =
         XT_(X.Ta, X.Ta, Rij, s, t, u, invpairs[Rij], Par.NumericalParams.N)
     @inline XTc_(Rij, s, t, u) =
         XT_(X.Tc, X.Tc, Rij, s, t, u, invpairs[Rij], Par.NumericalParams.N)
-    addTo1PartBubble!(Dgamma, XTa_, XTc_, Prop, Par)
+    addTo1PartBubble!(DiSigma, XTa_, XTc_, Prop, Par)
 end
 
 """
 Computes a single-particle (i.e. self-energy) bubble. Can only be used if argument is a vertex
 """
-function addTo1PartBubble!(Dgamma::AbstractArray, Γ::VertexType, Prop, Par)
+function addTo1PartBubble!(DiSigma::AbstractArray, Gamma::VertexType, Prop, Par)
     invpairs = Par.System.invpairs
     # @warn "addTo1PartBubble! for vertices is not tested yet!"
-    @inline Γa_(Rij, s, t, u) = V_(Γ.a, Rij, t, u, s, invpairs[Rij], Par.NumericalParams.N) # Tilde-type can be obtained by permutation of vertices
-    @inline Γb_(Rij, s, t, u) = V_(Γ.b, Rij, t, u, s, invpairs[Rij], Par.NumericalParams.N) # cTilde corresponds to b type vertex!
-    addTo1PartBubble!(Dgamma, Γa_, Γb_, Prop, Par)
+    @inline Gammaa_(Rij, s, t, u) =
+        V_(Gamma.a, Rij, t, u, s, invpairs[Rij], Par.NumericalParams.N) # Tilde-type can be obtained by permutation of vertices
+    @inline Gammab_(Rij, s, t, u) =
+        V_(Gamma.b, Rij, t, u, s, invpairs[Rij], Par.NumericalParams.N) # cTilde corresponds to b type vertex!
+    addTo1PartBubble!(DiSigma, Gammaa_, Gammab_, Prop, Par)
 end
 
-function compute1PartBubble!(Dgamma::AbstractArray, ΓorX, Prop, Par)
-    setZero!(Dgamma)
-    addTo1PartBubble!(Dgamma, ΓorX, Prop, Par)
+function compute1PartBubble!(DiSigma::AbstractArray, GammaorX, Prop, Par)
+    setZero!(DiSigma)
+    addTo1PartBubble!(DiSigma, GammaorX, Prop, Par)
 end
 function get_Self_Energy!(Workspace::PMFRGWorkspace, Lam)
     Par = Workspace.Par
-    @inline iS(x, nw) = iS_(Workspace.State.γ, x, Lam, nw, Par.NumericalParams.T) / 2
-    compute1PartBubble!(Workspace.Deriv.γ, Workspace.State.Γ, iS, Par)
+    @inline iS(x, nw) = iS_(Workspace.State.iSigma, x, Lam, nw, Par.NumericalParams.T) / 2
+    compute1PartBubble!(Workspace.Deriv.iSigma, Workspace.State.Gamma, iS, Par)
 end
 # @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
 
@@ -120,6 +128,20 @@ function getXBubble!(Workspace, Lam, ParallelizationScheme::MultiThreaded = Mult
     )
 end
 
+function set_KataninPropX!(PropX, NUnique, iSigma, DiSigma, Lam, nw, ns, T)
+    for x = 1:NUnique
+        PropX[x] =
+            iSKat_(iSigma, DiSigma, x, Lam, nw, T) * iG_(iSigma, x, Lam, nw + ns, T) * T
+    end
+end
+
+function set_KataninPropY!(PropY, NUnique, iSigma, DiSigma, Lam, nw, ns, T)
+    for i = 1:NUnique, j = 1:NUnique
+        PropY[i, j] =
+            iSKat_(iSigma, DiSigma, i, Lam, nw, T) * iG_(iSigma, j, Lam, nw + ns, T) * T
+    end
+end
+
 """writing to X and XTilde in Workspace, computes bubble diagrams within a range of frequencies given by isrange, itrange and iurange"""
 function getXBubblePartition!(
     X::BubbleType,
@@ -132,37 +154,9 @@ function getXBubblePartition!(
     itrange,
     iurange,
 )
-    (; T, N, lenIntw, np_vec) = Par.NumericalParams
+    (; T, lenIntw, np_vec) = Par.NumericalParams
     PropsXYBuffers = Buffers.PropsXY
     VertexBuffers = Buffers.Vertex
-    iG(x, nw) = iG_(State.γ, x, Lam, nw, T)
-    iSKat(x, nw) = iSKat_(State.γ, Deriv.γ, x, Lam, nw, T)
-
-    function getKataninPropX!(PropX, nw1, nw2)
-        for x = 1:Par.System.NUnique
-            PropX[x] = iSKat(x, nw1) * iG(x, nw2) * T
-        end
-    end
-
-    function getKataninPropY!(PropY, nw1, nw2)
-        for i = 1:Par.System.NUnique, j = 1:Par.System.NUnique
-            PropY[i, j] = iSKat(i, nw1) * iG(j, nw2) * T
-        end
-    end
-
-    function single_it_iteration(it, PropX, PropY, nw, is, Buffer, ns)
-        nt = np_vec[it]
-        for iu in iurange
-            nu = np_vec[iu]
-            if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
-                continue
-            end
-            addXTilde!(X, State, Par, is, it, iu, nw, PropY) # add to XTilde-type bubble functions
-            if (!Par.Options.usesymmetry || nu <= nt)
-                addX!(X, State, Par, is, it, iu, nw, PropX, Buffer)# add to X-type bubble functions
-            end
-        end
-    end
 
     Threads.@threads :static for (is, it_iteration) in collect(
         (is, it) for is in isrange, it = 1:div(length(itrange), 2, RoundUp)
@@ -173,39 +167,55 @@ function getXBubblePartition!(
         ns = np_vec[is]
 
 
-        if isodd(length(itrange)) && it_iteration == 1
-            for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
-                getKataninPropX!(BubblePropX, nw, nw + ns)
-                getKataninPropY!(BubblePropY, nw, nw + ns)
-                single_it_iteration(
-                    itrange[end],
-                    BubblePropX,
-                    BubblePropY,
-                    nw,
-                    is,
-                    Buffer,
-                    ns,
-                )
-            end
-        else
-            if isodd(length(itrange))
-                it_pair_iteration = it_iteration - 1
-                itlow = itrange[it_pair_iteration]
-                ithigh = itrange[end-it_pair_iteration]
+        for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
+            set_KataninPropX!(
+                BubblePropX,
+                Par.System.NUnique,
+                State.iSigma,
+                Deriv.iSigma,
+                Lam,
+                nw,
+                ns,
+                T,
+            )
+            set_KataninPropY!(
+                BubblePropY,
+                Par.System.NUnique,
+                State.iSigma,
+                Deriv.iSigma,
+                Lam,
+                nw,
+                ns,
+                T,
+            )
+            if isodd(length(itrange)) && it_iteration == 1
+                its = [itrange[end]]
             else
-                it_pair_iteration = it_iteration
-                itlow = itrange[it_pair_iteration]
-                ithigh = itrange[end-(it_pair_iteration-1)]
+                if isodd(length(itrange))
+                    it_pair_iteration = it_iteration - 1
+                    itlow = itrange[it_pair_iteration]
+                    ithigh = itrange[end-it_pair_iteration]
+                else
+                    it_pair_iteration = it_iteration
+                    itlow = itrange[it_pair_iteration]
+                    ithigh = itrange[end-(it_pair_iteration-1)]
+                end
+                its = [itlow, ithigh]
             end
-
-            for nw = (-lenIntw):(lenIntw-1) # Matsubara sum
-                getKataninPropX!(BubblePropX, nw, nw + ns)
-                getKataninPropY!(BubblePropY, nw, nw + ns)
-                single_it_iteration(itlow, BubblePropX, BubblePropY, nw, is, Buffer, ns)
-                single_it_iteration(ithigh, BubblePropX, BubblePropY, nw, is, Buffer, ns)
+            for _it in its
+                nt = np_vec[_it]
+                for iu in iurange
+                    nu = np_vec[iu]
+                    if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
+                        continue
+                    end
+                    addXTilde!(X, State, Par, is, _it, iu, nw, BubblePropY) # add to XTilde-type bubble functions
+                    if (!Par.Options.usesymmetry || nu <= nt)
+                        addX!(X, State, Par, is, _it, iu, nw, BubblePropX, Buffer)# add to X-type bubble functions
+                    end
+                end
             end
         end
-
         put!(PropsXYBuffers, (BubblePropX, BubblePropY))
         put!(VertexBuffers, Buffer)
     end
@@ -248,16 +258,16 @@ function addX!(
     nu = np_vec[iu]
     wpw1, wpw2, wmw3, wmw4 = mixedFrequencies(ns, nt, nu, nwpr)
 
-    bufferV_!(Va12, State.Γ.a, ns, wpw1, wpw2, invpairs, N)
-    bufferV_!(Vb12, State.Γ.b, ns, wpw1, wpw2, invpairs, N)
-    bufferV_!(Vc12, State.Γ.c, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Va12, State.Gamma.a, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Vb12, State.Gamma.b, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Vc12, State.Gamma.c, ns, wpw1, wpw2, invpairs, N)
 
-    bufferV_!(Va34, State.Γ.a, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vb34, State.Γ.b, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vc34, State.Γ.c, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Va34, State.Gamma.a, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vb34, State.Gamma.b, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vc34, State.Gamma.c, ns, wmw3, wmw4, invpairs, N)
 
-    bufferV_!(Vc21, State.Γ.c, ns, wpw2, wpw1, invpairs, N)
-    bufferV_!(Vc43, State.Γ.c, ns, wmw4, wmw3, invpairs, N)
+    bufferV_!(Vc21, State.Gamma.c, ns, wpw2, wpw1, invpairs, N)
+    bufferV_!(Vc43, State.Gamma.c, ns, wmw4, wmw3, invpairs, N)
     # get fields of siteSum struct as Matrices for better use of LoopVectorization
     S_ki = siteSum.ki
     S_kj = siteSum.kj
@@ -303,9 +313,9 @@ function addXTilde!(
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
-    @inline Va_(Rij, s, t, u) = V_(State.Γ.a, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vb_(Rij, s, t, u) = V_(State.Γ.b, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vc_(Rij, s, t, u) = V_(State.Γ.c, Rij, s, t, u, invpairs[Rij], N)
+    @inline Va_(Rij, s, t, u) = V_(State.Gamma.a, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vb_(Rij, s, t, u) = V_(State.Gamma.b, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vc_(Rij, s, t, u) = V_(State.Gamma.c, Rij, s, t, u, invpairs[Rij], N)
     ns = np_vec[is]
     nt = np_vec[it]
     nu = np_vec[iu]
@@ -378,9 +388,9 @@ const SingleElementVector = Union{SVector{1},MVector{1}}
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, OnsitePairs) = Par.System
 
-    @inline Va_(Rij, s, t, u) = V_(State.Γ.a, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vb_(Rij, s, t, u) = V_(State.Γ.b, Rij, s, t, u, invpairs[Rij], N)
-    @inline Vc_(Rij, s, t, u) = V_(State.Γ.c, Rij, s, t, u, invpairs[Rij], N)
+    @inline Va_(Rij, s, t, u) = V_(State.Gamma.a, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vb_(Rij, s, t, u) = V_(State.Gamma.b, Rij, s, t, u, invpairs[Rij], N)
+    @inline Vc_(Rij, s, t, u) = V_(State.Gamma.c, Rij, s, t, u, invpairs[Rij], N)
     ns = np_vec[is]
     nt = np_vec[it]
     nu = np_vec[iu]
@@ -458,16 +468,16 @@ end
     nu = np_vec[iu]
     wpw1, wpw2, wmw3, wmw4 = mixedFrequencies(ns, nt, nu, nwpr)
 
-    bufferV_!(Va12, State.Γ.a, ns, wpw1, wpw2, invpairs, N)
-    bufferV_!(Vb12, State.Γ.b, ns, wpw1, wpw2, invpairs, N)
-    bufferV_!(Vc12, State.Γ.c, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Va12, State.Gamma.a, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Vb12, State.Gamma.b, ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Vc12, State.Gamma.c, ns, wpw1, wpw2, invpairs, N)
 
-    bufferV_!(Va34, State.Γ.a, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vb34, State.Γ.b, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vc34, State.Γ.c, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Va34, State.Gamma.a, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vb34, State.Gamma.b, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vc34, State.Gamma.c, ns, wmw3, wmw4, invpairs, N)
 
-    bufferV_!(Vc21, State.Γ.c, ns, wpw2, wpw1, invpairs, N)
-    bufferV_!(Vc43, State.Γ.c, ns, wmw4, wmw3, invpairs, N)
+    bufferV_!(Vc21, State.Gamma.c, ns, wpw2, wpw1, invpairs, N)
+    bufferV_!(Vc43, State.Gamma.c, ns, wmw4, wmw3, invpairs, N)
     # get fields of siteSum struct as Matrices for better use of LoopVectorization
     S_ki = siteSum.ki
     S_kj = siteSum.kj
@@ -526,26 +536,26 @@ function symmetrizeBubble!(X::BubbleType, Par::PMFRGParams)
     @tturbo X.Td .= X.Ta .- X.Tb .- X.Tc
 end
 
-function addToVertexFromBubble!(Γ::VertexType, X::BubbleType)
-    Threads.@threads :static for iu in axes(Γ.a, 4)
-        for it in axes(Γ.a, 3), is in axes(Γ.a, 2), Rij in axes(Γ.a, 1)
-            Γ.a[Rij, is, it, iu] +=
+function addToVertexFromBubble!(Gamma::VertexType, X::BubbleType)
+    Threads.@threads :static for iu in axes(Gamma.a, 4)
+        for it in axes(Gamma.a, 3), is in axes(Gamma.a, 2), Rij in axes(Gamma.a, 1)
+            Gamma.a[Rij, is, it, iu] +=
                 X.a[Rij, is, it, iu] - X.Ta[Rij, it, is, iu] + X.Ta[Rij, iu, is, it]
-            Γ.b[Rij, is, it, iu] +=
+            Gamma.b[Rij, is, it, iu] +=
                 X.b[Rij, is, it, iu] - X.Tc[Rij, it, is, iu] + X.Tc[Rij, iu, is, it]
-            Γ.c[Rij, is, it, iu] +=
+            Gamma.c[Rij, is, it, iu] +=
                 X.c[Rij, is, it, iu] - X.Tb[Rij, it, is, iu] + X.Td[Rij, iu, is, it]
         end
     end
-    return Γ
+    return Gamma
 end
 
 
-function symmetrizeVertex!(Γ::VertexType, Par)
+function symmetrizeVertex!(Gamma::VertexType, Par)
     N = Par.NumericalParams.N
     Threads.@threads :static for iu = 1:N
         for it = 1:N, is = 1:N, R in Par.System.OnsitePairs
-            Γ.c[R, is, it, iu] = -Γ.b[R, it, is, iu]
+            Gamma.c[R, is, it, iu] = -Gamma.b[R, it, is, iu]
         end
     end
 end
@@ -556,12 +566,18 @@ getChi(State::ArrayPartition, Lam::Real, Par::PMFRGParams, Numax) =
 getChi(State::ArrayPartition, Lam::Real, Par::PMFRGParams) =
     getChi(State.x[2], State.x[5], Lam, Par)
 
-function getChi(gamma::AbstractArray, Γc::AbstractArray, Lam::Real, Par::PMFRGParams, Numax)
+function getChi(
+    iSigma::AbstractArray,
+    Gammac::AbstractArray,
+    Lam::Real,
+    Par::PMFRGParams,
+    Numax,
+)
     (; T, N, lenIntw_acc, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
-    @inline iG(x, w) = iG_(gamma, x, Lam, w, T)
-    @inline Vc_(Rij, s, t, u) = V_(Γc, Rij, s, t, u, invpairs[Rij], N)
+    @inline iG(x, w) = iG_(iSigma, x, Lam, w, T)
+    @inline Vc_(Rij, s, t, u) = V_(Gammac, Rij, s, t, u, invpairs[Rij], N)
 
     Chi = zeros(_getFloatType(Par), Npairs, N)
 
@@ -587,12 +603,12 @@ function getChi(gamma::AbstractArray, Γc::AbstractArray, Lam::Real, Par::PMFRGP
     return (Chi)
 end
 
-function getChi(gamma::AbstractArray, Γc::AbstractArray, Lam::Real, Par::PMFRGParams)
+function getChi(iSigma::AbstractArray, Gammac::AbstractArray, Lam::Real, Par::PMFRGParams)
     (; T, N, lenIntw_acc) = Par.NumericalParams
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
-    @inline iG(x, w) = iG_(gamma, x, Lam, w, T)
-    @inline Vc_(Rij, s, t, u) = V_(Γc, Rij, s, t, u, invpairs[Rij], N)
+    @inline iG(x, w) = iG_(iSigma, x, Lam, w, T)
+    @inline Vc_(Rij, s, t, u) = V_(Gammac, Rij, s, t, u, invpairs[Rij], N)
 
     Chi = zeros(_getFloatType(Par), Npairs)
 

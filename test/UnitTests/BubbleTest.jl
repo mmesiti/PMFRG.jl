@@ -22,17 +22,17 @@ end
 
 function test_computeBubbles(Par)
     Workspace = PMFRG.SetupParquet(Par)
-    (; State, Γ0, X, B0, BX, Par, Buffer = Workspace)
+    (; State, Gamma0, X, B0, BX, Par, Buffer = Workspace)
     PMFRG.getProp! = constructPropagatorFunction(Workspace, 1.0)
 
-    PMFRG.addToLeft2PartBubble!(B0, Γ0, Γ0, State.Γ, getProp!, Par, Buffer)
-    PMFRG.addToLeft2PartBubble!(BX, X, X, State.Γ, getProp!, Par, Buffer)
+    PMFRG.addToLeft2PartBubble!(B0, Gamma0, Gamma0, State.Gamma, getProp!, Par, Buffer)
+    PMFRG.addToLeft2PartBubble!(BX, X, X, State.Gamma, getProp!, Par, Buffer)
     return Workspace
 end
 
 # function test_BareBubbles(Par::ParquetParams = Params(getPolymer(2),Parquet(),N=24,lenIntw = 120);tol = 1e-14)
 #     WS = test_computeBubbles(Par)
-#     @testset "B0 == BX(Γ^0,Γ)" begin @test dist(WS.B0,WS.BX) ≈ 0. atol = tol end
+#     @testset "B0 == BX(Gamma^0,Gamma)" begin @test dist(WS.B0,WS.BX) ≈ 0. atol = tol end
 # end
 
 function test_BareBubbles(; kwargs...)
@@ -45,17 +45,33 @@ function test_BareBubbles(Workspace::PMFRG.ParquetWorkspace; tol = 1e-14)
 
     getProp! = PMFRG.constructPropagatorFunction(Workspace, 1.0)
 
-    (; State, Γ0, X, B0, BX, Par, Buffer) = Workspace
+    (; State, Gamma0, X, B0, BX, Par, Buffer) = Workspace
 
     B0_new = deepcopy(B0) # Allocate new memory to avoid mutating Workspace
     BX_new = deepcopy(BX)
 
-    Γinit = PMFRG.constructBubbleFromVertex(PMFRG.BareVertex_Freq(Par))
+    Gammainit = PMFRG.constructBubbleFromVertex(PMFRG.BareVertex_Freq(Par))
 
-    PMFRG.computeLeft2PartBubble!(B0_new, Γ0, Γ0, State.Γ, getProp!, Par, Buffer)
-    PMFRG.computeLeft2PartBubble!(BX_new, Γinit, Γinit, State.Γ, getProp!, Par, Buffer)
+    PMFRG.computeLeft2PartBubble!(
+        B0_new,
+        Gamma0,
+        Gamma0,
+        State.Gamma,
+        getProp!,
+        Par,
+        Buffer,
+    )
+    PMFRG.computeLeft2PartBubble!(
+        BX_new,
+        Gammainit,
+        Gammainit,
+        State.Gamma,
+        getProp!,
+        Par,
+        Buffer,
+    )
 
-    @testset "B0 == BX(Γ^0,Γ)" begin
+    @testset "B0 == BX(Gamma^0,Gamma)" begin
         @test PMFRG.dist(B0_new, BX_new) ≈ 0.0 atol = tol
     end
 end

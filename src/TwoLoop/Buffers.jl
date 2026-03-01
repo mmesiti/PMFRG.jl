@@ -68,7 +68,7 @@ end
     XBuffer::BubbleBufferType,
     XL::BubbleType,
     XR::BubbleType,
-    Γ::VertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -81,7 +81,7 @@ end
     nu = np_vec[iu]
     wpw1, wpw2, wmw3, wmw4 = mixedFrequencies(ns, nt, nu, nwpr)
 
-    fillBufferL_mixedFreq!(VBuffer, XBuffer, XL, XR, Γ, ns, wpw1, wpw2, wmw3, wmw4, Par)
+    fillBufferL_mixedFreq!(VBuffer, XBuffer, XL, XR, Gamma, ns, wpw1, wpw2, wmw3, wmw4, Par)
 end
 
 @inline function fillBufferL_mixedFreq!(
@@ -89,7 +89,7 @@ end
     XBuffer::BubbleBufferType,
     XL::BubbleType,
     XR::BubbleType,
-    Γ::VertexType,
+    Gamma::VertexType,
     ns::Integer,
     wpw1::Integer,
     wpw2::Integer,
@@ -105,11 +105,11 @@ end
 
     (; XTa21, XTb21, XTc21, XTd21) = XBuffer
 
-    bufferV_!(Va34, Γ.a, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vb34, Γ.b, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vc34, Γ.c, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Va34, Gamma.a, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vb34, Gamma.b, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vc34, Gamma.c, ns, wmw3, wmw4, invpairs, N)
 
-    bufferV_!(Vc43, Γ.c, ns, wmw4, wmw3, invpairs, N)
+    bufferV_!(Vc43, Gamma.c, ns, wmw4, wmw3, invpairs, N)
 
     bufferXT_!(XTa21, XR.Ta, XL.Ta, wpw2, ns, wpw1, invpairs, N)
     bufferXT_!(XTb21, XR.Tb, XL.Tb, wpw2, ns, wpw1, invpairs, N)
@@ -123,7 +123,7 @@ end
     XBuffer::BubbleBufferType,
     XL::BubbleType,
     XR::BubbleType,
-    Γ::VertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -139,13 +139,13 @@ end
     wpw1, wpw2, wmw3, wmw4 = mixedFrequencies(ns, nt, nu, nwpr)
     wpw1, wpw2, wmw3, wmw4 = wmw3, wmw4, wpw1, wpw2 #swap frequencies for right bubble
 
-    fillBufferL_mixedFreq!(VBuffer, XBuffer, XL, XR, Γ, ns, wpw1, wpw2, wmw3, wmw4, Par)
+    fillBufferL_mixedFreq!(VBuffer, XBuffer, XL, XR, Gamma, ns, wpw1, wpw2, wmw3, wmw4, Par)
 end
 
 @inline function fillBufferL!(
     VBuffer::VertexBufferType,
-    Γ0::BareVertexType,
-    Γ::VertexType,
+    Gamma0::BareVertexType,
+    Gamma::VertexType,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -162,9 +162,9 @@ end
     nu = np_vec[iu]
     wpw1, wpw2, wmw3, wmw4 = mixedFrequencies(ns, nt, nu, nwpr)
 
-    bufferV_!(Va34, Γ.a, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vb34, Γ.b, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vc34, Γ.c, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Va34, Gamma.a, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vb34, Gamma.b, ns, wmw3, wmw4, invpairs, N)
+    bufferV_!(Vc34, Gamma.c, ns, wmw3, wmw4, invpairs, N)
 
-    bufferV_!(Vc43, Γ.c, ns, wmw4, wmw3, invpairs, N)
+    bufferV_!(Vc43, Gamma.c, ns, wmw4, wmw3, invpairs, N)
 end

@@ -16,7 +16,7 @@ struct UseMPI <: AbstractParallelizationScheme end
 Struct to hold all relevant quantities that are needed throughout the computation. 
 
     N::Int = 24
-    Ngamma::Int = 100 #Number of gamma frequencies
+    NiSigma::Int = 100 #Number of iSigma frequencies
     VDims::NTuple{4,Int} = (Npairs,N,N,N)
     accuracy::Float64 = 1e-6
     Lam_min::Float64 = exp(-10.),
@@ -25,15 +25,15 @@ Struct to hold all relevant quantities that are needed throughout the computatio
     MinimalOutput::Bool = false
     ex_freq::Float64 = (2*N-1)*pi*T
     lenIntw::Int = N
-    lenIntw_acc::Int = 2*maximum((N,Ngamma,lenIntw)) # more accurate for less demanding sums
+    lenIntw_acc::Int = 2*maximum((N,NiSigma,lenIntw)) # more accurate for less demanding sums
     np_vec::Array{Int,1} = collect(0:N-1)
-    np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1)
+    np_vec_iSigma::Array{Int,1} = collect(0:NiSigma-1)
 
 """
 struct NumericalParams{F<:AbstractFloat}
     T::F # Temperature
     N::Int # Number of positive frequencies
-    Ngamma::Int  # Number of positive gamma frequencies
+    NiSigma::Int  # Number of positive iSigma frequencies
 
     accuracy::F # 
     Lam_min::F
@@ -42,7 +42,7 @@ struct NumericalParams{F<:AbstractFloat}
     lenIntw::Int
     lenIntw_acc::Int  # more accurate for less demanding sums
     np_vec::Array{Int,1}
-    np_vec_gamma::Array{Int,1}
+    np_vec_iSigma::Array{Int,1}
 
     ex_freq::F
 end
@@ -55,14 +55,14 @@ _convertToFloat(Primary::Real, args...) = convert.(Float64, (Primary, args...))
 function NumericalParams(;
     T::Real = 0.5, # Temperature
     N::Integer = 24,
-    Ngamma::Integer = N, #Number of gamma frequencies
+    NiSigma::Integer = N, #Number of iSigma frequencies
     accuracy::AbstractFloat = 1e-6, # convert type to float type
     Lam_min::AbstractFloat = exp(-10.0),
     Lam_max::AbstractFloat = exp(10.0),
     lenIntw::Int = N,
-    lenIntw_acc::Int = 2 * maximum((N, Ngamma, lenIntw)), # more accurate for less demanding sums
+    lenIntw_acc::Int = 2 * maximum((N, NiSigma, lenIntw)), # more accurate for less demanding sums
     np_vec::Array{Int,1} = collect(0:(N-1)),
-    np_vec_gamma::Array{Int,1} = collect(0:(Ngamma-1)),
+    np_vec_iSigma::Array{Int,1} = collect(0:(NiSigma-1)),
     ex_freq = (2 * N - 1) * pi * T,
     kwargs...,
 )
@@ -73,14 +73,14 @@ function NumericalParams(;
     return NumericalParams(
         T,
         N,
-        Ngamma,
+        NiSigma,
         accuracy,
         Lam_min,
         Lam_max,
         lenIntw,
         lenIntw_acc,
         np_vec,
-        np_vec_gamma,
+        np_vec_iSigma,
         ex_freq,
     )
 end
@@ -109,21 +109,21 @@ getVDims(Par::PMFRGParams) =
     (Par.System.Npairs, Par.NumericalParams.N, Par.NumericalParams.N, Par.NumericalParams.N)
 VertexType(Par::PMFRGParams) = VertexType(getVDims(Par), _getFloatType(Par))
 
-function setToBareVertex!(Γc::AbstractArray{T,4}, couplings::AbstractVector) where {T}
-    for Rj in eachindex(couplings, axes(Γc, 1))
-        Γc[Rj, :, :, :] .= -couplings[Rj]
+function setToBareVertex!(Gammac::AbstractArray{T,4}, couplings::AbstractVector) where {T}
+    for Rj in eachindex(couplings, axes(Gammac, 1))
+        Gammac[Rj, :, :, :] .= -couplings[Rj]
     end
-    return Γc
+    return Gammac
 end
 
-function setToBareVertex!(Γ::VertexType, couplings::AbstractVector)
-    Γ.a .= 0.0
-    Γ.b .= 0.0
-    setToBareVertex!(Γ.c, couplings)
-    return Γ
+function setToBareVertex!(Gamma::VertexType, couplings::AbstractVector)
+    Gamma.a .= 0.0
+    Gamma.b .= 0.0
+    setToBareVertex!(Gamma.c, couplings)
+    return Gamma
 end
 
-setToBareVertex!(Γ::VertexType, Par) = setToBareVertex!(Γ, Par.System.couplings)
+setToBareVertex!(Gamma::VertexType, Par) = setToBareVertex!(Gamma, Par.System.couplings)
 
 """Allocates a frequency-dependent vertex type and initializes it with the bare vertex"""
 BareVertex_Freq(Par) = setToBareVertex!(VertexType(Par), Par.System.couplings)
@@ -139,26 +139,27 @@ BareVertexType(Par::PMFRGParams) =
 """Struct containing information about the (physical) ODE State, i.e. vertices"""
 struct StateType{T}
     f_int::Array{T,1}
-    γ::Array{T,2}
-    Γ::VertexType{T}
+    iSigma::Array{T,2}
+    Gamma::VertexType{T}
 end
 
-function StateType(NUnique::Int, Ngamma::Int, VDims::Tuple, type = Float64::Type)
+function StateType(NUnique::Int, NiSigma::Int, VDims::Tuple, type = Float64::Type)
     return StateType(
         zeros(type, NUnique), # fint
-        zeros(type, NUnique, Ngamma), # gamma
+        zeros(type, NUnique, NiSigma), # iSigma
         VertexType(VDims, type),
     )
 end
 
 StateType(Par::PMFRGParams) = StateType(
     Par.System.NUnique,
-    Par.NumericalParams.Ngamma,
+    Par.NumericalParams.NiSigma,
     getVDims(Par),
     _getFloatType(Par),
 )
 
-StateType(f_int, γ, Γa, Γb, Γc) = StateType(f_int, γ, VertexType(Γa, Γb, Γc))
+StateType(f_int, iSigma, Gammaa, Gammab, Gammac) =
+    StateType(f_int, iSigma, VertexType(Gammaa, Gammab, Gammac))
 
 """Struct storing information about Bubble functions, i.e. rhs derivatives of vertex flow equations."""
 struct BubbleType{T}
@@ -188,25 +189,29 @@ const VertexOrBubble = Union{StateType,BubbleType,VertexType}
 
 BubbleType(Par::PMFRGParams) = BubbleType(getVDims(Par), _getFloatType(Par))
 
-function constructBubbleFromVertex!(B::BubbleType, Γ::VertexType)
-    B.a .= Γ.a
-    B.b .= Γ.b
-    B.c .= Γ.c
-    for Rij in axes(Γ.a, 1), s in axes(Γ.a, 2), t in axes(Γ.a, 3), u in axes(Γ.a, 4)
-        B.Ta[Rij, s, t, u] = -Γ.a[Rij, t, s, u]
-        B.Tb[Rij, s, t, u] = -Γ.c[Rij, t, s, u]
-        B.Tc[Rij, s, t, u] = -Γ.b[Rij, t, s, u]
-        B.Td[Rij, s, t, u] = Γ.c[Rij, t, u, s]
+function constructBubbleFromVertex!(B::BubbleType, Gamma::VertexType)
+    B.a .= Gamma.a
+    B.b .= Gamma.b
+    B.c .= Gamma.c
+    for Rij in axes(Gamma.a, 1),
+        s in axes(Gamma.a, 2),
+        t in axes(Gamma.a, 3),
+        u in axes(Gamma.a, 4)
+
+        B.Ta[Rij, s, t, u] = -Gamma.a[Rij, t, s, u]
+        B.Tb[Rij, s, t, u] = -Gamma.c[Rij, t, s, u]
+        B.Tc[Rij, s, t, u] = -Gamma.b[Rij, t, s, u]
+        B.Td[Rij, s, t, u] = Gamma.c[Rij, t, u, s]
     end
     return B
 end
-constructBubbleFromVertex(Γ::VertexType) =
-    constructBubbleFromVertex!(BubbleType(size(Γ.a)), Γ)
+constructBubbleFromVertex(Gamma::VertexType) =
+    constructBubbleFromVertex!(BubbleType(size(Gamma.a)), Gamma)
 
 """Struct containing the observables that are saved at every step"""
 struct Observables{T}
     Chi::Vector{T}
-    gamma::Matrix{T}
+    iSigma::Matrix{T}
     f_int::Vector{T}
     MaxVa::Vector{T}
     MaxVb::Vector{T}
@@ -228,5 +233,5 @@ end
 VertexBufferType(type, Npairs) = VertexBufferType((zeros(type, Npairs) for _ = 1:8)...)
 ##
 RecursiveArrayTools.ArrayPartition(x::StateType) =
-    ArrayPartition(x.f_int, x.γ, x.Γ.a, x.Γ.b, x.Γ.c)
+    ArrayPartition(x.f_int, x.iSigma, x.Gamma.a, x.Gamma.b, x.Gamma.c)
 StateType(Arr::ArrayPartition) = StateType(Arr.x...)

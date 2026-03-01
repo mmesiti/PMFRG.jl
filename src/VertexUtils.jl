@@ -14,11 +14,11 @@ function writeTo!(A::AbstractArray, B::AbstractArray)
 end
 
 """Computes total difference between two objects of type T by summing up the distance of all elements"""
-function squareDist(Γ1::T, Γ2::T) where {T<:VertexOrBubble}
+function squareDist(Gamma1::T, Gamma2::T) where {T<:VertexOrBubble}
     d = 0.0
     for f in fieldnames(T)
-        a = getfield(Γ1, f)
-        b = getfield(Γ2, f)
+        a = getfield(Gamma1, f)
+        b = getfield(Gamma2, f)
         d += squareDist(a, b)
     end
     return d

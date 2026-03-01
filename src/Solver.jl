@@ -3,7 +3,7 @@ Base.show(io::IO, f::Float64) = @printf(io, "%1.15f", f)
 _getFloatType(Par::PMFRGParams) = typeof(Par.NumericalParams.T)
 
 function InitializeState(Par::PMFRGParams)
-    (; N, Ngamma) = Par.NumericalParams
+    (; N, NiSigma) = Par.NumericalParams
     VDims = getVDims(Par)
     (; couplings, NUnique) = Par.System
 
@@ -11,14 +11,14 @@ function InitializeState(Par::PMFRGParams)
 
     State = ArrayPartition( #Allocate Memory:
         zeros(floattype, NUnique), # f_int 
-        zeros(floattype, NUnique, Ngamma), # gamma
+        zeros(floattype, NUnique, NiSigma), # iSigma 
         zeros(floattype, VDims), #Va
         zeros(floattype, VDims), #Vb
         zeros(floattype, VDims), #Vc
     )
 
-    Γc = State.x[5]
-    setToBareVertex!(Γc, couplings)
+    Gammac = State.x[5]
+    setToBareVertex!(Gammac, couplings)
     return State
 end
 
@@ -224,19 +224,19 @@ DefaultGroup(Par::PMFRGParams) = strd(Par.NumericalParams.T)
 
 function getObservables(::Type{Observables}, State::ArrayPartition, Lam, Par)
     @timeit_debug "get_observables" begin
-        f_int, gamma, Va, Vb, Vc = State.x
+        f_int, iSigma, Va, Vb, Vc = State.x
         chi = getChi(State, Lam, Par)
         MaxVa = maximum(abs, Va, dims = (2, 3, 4, 5))[:, 1, 1, 1]
         MaxVb = maximum(abs, Vb, dims = (2, 3, 4, 5))[:, 1, 1, 1]
         MaxVc = maximum(abs, Vc, dims = (2, 3, 4, 5))[:, 1, 1, 1]
-        return Observables(chi, copy(gamma), copy(f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
+        return Observables(chi, copy(iSigma), copy(f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
     end
 end
 
 writeOutput(State::ArrayPartition, saved_values, Lam, Par) =
     writeOutput(State.x..., saved_values.saveval[end], Lam, Par)
 
-function writeOutput(f_int, gamma, Va, Vb, Vc, obs, Lam, Par)
+function writeOutput(f_int, iSigma, Va, Vb, Vc, obs, Lam, Par)
     (; usesymmetry) = Par.Options
     (; N, np_vec, T) = Par.NumericalParams
     chi = obs.Chi

@@ -119,7 +119,7 @@ julia> f = h5open(fn_PM)
 │  ├─ 🔢 NUnique
 │  ├─ 🔢 T
 │  ├─ 🔢 f_int
-│  └─ 🔢 gamma
+│  └─ 🔢 iSigma 
 julia> chi = read(f["0.5/Chi"]);
 julia> wholefileasDict = read(f);
 close(f)

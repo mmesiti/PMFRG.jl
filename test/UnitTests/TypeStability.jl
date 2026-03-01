@@ -84,16 +84,16 @@ function test_TwoLoopAllocations(Par = Params(getPolymer(2), TwoLoop()))
 
 end
 function test_TwoLoopAllocations(Par, WS, PropBX, PropBY, VB, XB)
-    PMFRG.addBL!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropBX, VB, XB) #compile functions
-    PMFRG.addBR!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropBX, VB, XB) #compile functions
-    PMFRG.addBLTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropBY) #compile functions
-    PMFRG.addBRTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropBY) #compile functions
+    PMFRG.addBL!(WS.Y, WS.X, WS.X, WS.State.Gamma, 1, 1, 2, 2, Par, PropBX, VB, XB) #compile functions
+    PMFRG.addBR!(WS.Y, WS.X, WS.X, WS.State.Gamma, 1, 1, 2, 2, Par, PropBX, VB, XB) #compile functions
+    PMFRG.addBLTilde!(WS.Y, WS.X, WS.X, WS.State.Gamma, 1, 1, 2, 2, Par, PropBY) #compile functions
+    PMFRG.addBRTilde!(WS.Y, WS.X, WS.X, WS.State.Gamma, 1, 1, 2, 2, Par, PropBY) #compile functions
 
     aX = @allocated PMFRG.addBL!(
         WS.Y,
         WS.X,
         WS.X,
-        WS.State.Γ,
+        WS.State.Gamma,
         1,
         1,
         2,
@@ -107,7 +107,7 @@ function test_TwoLoopAllocations(Par, WS, PropBX, PropBY, VB, XB)
         WS.Y,
         WS.X,
         WS.X,
-        WS.State.Γ,
+        WS.State.Gamma,
         1,
         1,
         2,
@@ -117,10 +117,30 @@ function test_TwoLoopAllocations(Par, WS, PropBX, PropBY, VB, XB)
         VB,
         XB,
     )
-    aXT =
-        @allocated PMFRG.addBLTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropBY)
-    aXT +=
-        @allocated PMFRG.addBRTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropBY)
+    aXT = @allocated PMFRG.addBLTilde!(
+        WS.Y,
+        WS.X,
+        WS.X,
+        WS.State.Gamma,
+        1,
+        1,
+        2,
+        2,
+        Par,
+        PropBY,
+    )
+    aXT += @allocated PMFRG.addBRTilde!(
+        WS.Y,
+        WS.X,
+        WS.X,
+        WS.State.Gamma,
+        1,
+        1,
+        2,
+        2,
+        Par,
+        PropBY,
+    )
 
     test_TypeStability(Par, WS, aX, aXT)
 

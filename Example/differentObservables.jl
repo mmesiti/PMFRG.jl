@@ -4,7 +4,7 @@ using SpinFRGLattices, PMFRG
 struct NewObs{T}
     Chi::Vector{T}
     Chinu::Matrix{T}
-    gamma::Matrix{T}
+    iSigma::Matrix{T}
     f_int::Vector{T}
     MaxVa::Vector{T}
     MaxVb::Vector{T}
@@ -13,12 +13,12 @@ end
 
 """dispatch on NewObs"""
 function PMFRG.getObservables(::Type{NewObs}, State::PMFRG.ArrayPartition, T, Par)
-    f_int, gamma, Va, Vb, Vc = State.x
+    f_int, iSigma, Va, Vb, Vc = State.x
     chinu = PMFRG.getChi(State, T, Par, Par.NumericalParams.N)
     MaxVa = maximum(abs, Va, dims = (2, 3, 4, 5))[:, 1, 1, 1]
     MaxVb = maximum(abs, Vb, dims = (2, 3, 4, 5))[:, 1, 1, 1]
     MaxVc = maximum(abs, Vc, dims = (2, 3, 4, 5))[:, 1, 1, 1]
-    return NewObs(chinu[:, 1], chinu, copy(gamma), copy(f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
+    return NewObs(chinu[:, 1], chinu, copy(iSigma), copy(f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
 end
 
 System = getPolymer(2)

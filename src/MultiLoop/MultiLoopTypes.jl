@@ -105,13 +105,13 @@ struct ParquetWorkspace{T,Buff,P<:PMFRGParams} <: PMFRGWorkspace
     State::StateType{T} #Stores the current step of iteration
     OldState::StateType{T} #Stores the last step of iteration
 
-    Γ0::BareVertexType{T} #Stores the bare vertex
+    Gamma0::BareVertexType{T} #Stores the bare vertex
     I::VertexType{T} #Stores the irreducible vertex
 
     X::BubbleType{T} #Stores the actual bubble function X = B0 + BX
 
-    B0::BubbleType{T} # Bubble involving bare vertex Γ_0 ∘ Γ
-    BX::BubbleType{T} # Bubble involving other bubble X ∘ Γ
+    B0::BubbleType{T} # Bubble involving bare vertex Gamma_0 ∘ Gamma
+    BX::BubbleType{T} # Bubble involving other bubble X ∘ Gamma
 
     Buffer::Buff #Buffer Arrays
 
@@ -149,7 +149,7 @@ function SetupParquet(Par::ParquetParams)
         Buffs,
         Par,
     )
-    setToBareVertex!(Workspace.OldState.Γ, Par)
-    setToBareVertex!(Workspace.State.Γ, Par)
+    setToBareVertex!(Workspace.OldState.Gamma, Par)
+    setToBareVertex!(Workspace.State.Gamma, Par)
     return Workspace
 end

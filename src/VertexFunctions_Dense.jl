@@ -6,15 +6,15 @@ function get_sign_iw(nw::Integer, N::Integer)
 end
 
 """Returns self energy evaluated at the appropriate frequency"""
-function gamma_(gamma::AbstractArray, x::Integer, nw::Integer)
-    Ngamma = size(gamma, 2)
+function iSigma_(iSigma::AbstractArray, x::Integer, nw::Integer)
+    NiSigma = size(iSigma, 2)
     s = 1
     if nw < 0
         nw = -nw - 1
         s = -1
     end
-    iw = get_sign_iw(nw, Ngamma)
-    return s * gamma[x, iw]
+    iw = get_sign_iw(nw, NiSigma)
+    return s * iSigma[x, iw]
 end
 
 @inline function convertFreqArgs(ns, nt, nu, Nw)

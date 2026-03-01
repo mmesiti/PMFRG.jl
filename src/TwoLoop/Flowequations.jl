@@ -8,13 +8,13 @@ function getDerivTwoLoop!(Deriv, State, setup, Lam)
 
     symmetrizeBubble!(Workspace.X, Par)
 
-    addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
+    addToVertexFromBubble!(Workspace.Deriv.Gamma, Workspace.X)
     getYBubble!(Workspace, Lam)
 
     symmetrizeBubble!(Workspace.Y, Par)
-    addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.Y)
+    addToVertexFromBubble!(Workspace.Deriv.Gamma, Workspace.Y)
 
-    symmetrizeVertex!(Workspace.Deriv.Γ, Par)
+    symmetrizeVertex!(Workspace.Deriv.Gamma, Par)
     return
 end
 
@@ -23,8 +23,8 @@ function getYBubble!(Workspace::TwoLoopWorkspace, Lam)
     getProp! = constructPropagatorFunction(Workspace, Lam)
     (; State, Par) = Workspace
     setZero!(Y)
-    addToLeft2PartBubble!(Y, X, X, State.Γ, getProp!, Par, Buffer)
-    addToRight2PartBubble!(Y, X, X, State.Γ, getProp!, Par, Buffer)
+    addToLeft2PartBubble!(Y, X, X, State.Gamma, getProp!, Par, Buffer)
+    addToRight2PartBubble!(Y, X, X, State.Gamma, getProp!, Par, Buffer)
 end
 
 @inline function convertFreqArgsXT(ns, nt, nu, Nw)
@@ -39,14 +39,14 @@ end
 
 """
 Computes a two-particle bubble in the s-Channel given two four-point functions (i.e. vertices or other bubbles).
-Γ is assumed to be a vertex.
+Gamma is assumed to be a vertex.
 To allow the computation using just the left part of a bubble, specification of the transpose is needed i.e. Transpose(X_L) = X_R and Transpose(X) = X, where X = XL + XR is the full bubble.
 """
 function addTo2PartBubble!(
     ResultBubble::BubbleType,
     X,
     XTransp,
-    Γ::VertexType,
+    Gamma::VertexType,
     getProp!::Function,
     addBTilde_Func!::Function,
     addB_Func!::Function,
@@ -74,7 +74,7 @@ function addTo2PartBubble!(
                             ResultBubble,
                             X,
                             XTransp,
-                            Γ,
+                            Gamma,
                             is,
                             it,
                             iu,
@@ -87,7 +87,7 @@ function addTo2PartBubble!(
                                 ResultBubble,
                                 X,
                                 XTransp,
-                                Γ,
+                                Gamma,
                                 is,
                                 it,
                                 iu,
@@ -113,7 +113,7 @@ end
     ResultBubble::BubbleType,
     X,
     XTransp,
-    Γ::VertexType,
+    Gamma::VertexType,
     getProp!::Function,
     addBTilde_Func!::Function,
     addB_Func!::Function,
@@ -125,7 +125,7 @@ end
         ResultBubble,
         X,
         XTransp,
-        Γ,
+        Gamma,
         getProp!,
         addBTilde_Func!,
         addB_Func!,
@@ -139,7 +139,7 @@ end
     ResultBubble::BubbleType,
     X,
     XTransp,
-    Γ::VertexType,
+    Gamma::VertexType,
     getProp!::Function,
     Par,
     Buffer,
@@ -147,7 +147,7 @@ end
     ResultBubble,
     X,
     XTransp,
-    Γ,
+    Gamma,
     getProp!,
     addBLTilde!,
     addBL!,
@@ -159,7 +159,7 @@ end
     ResultBubble::BubbleType,
     X,
     XTransp,
-    Γ::VertexType,
+    Gamma::VertexType,
     getProp!::Function,
     Par,
     Buffer,
@@ -167,7 +167,7 @@ end
     ResultBubble,
     X,
     XTransp,
-    Γ,
+    Gamma,
     getProp!,
     addBRTilde!,
     addBR!,
@@ -179,7 +179,7 @@ end
     ResultBubble::BubbleType,
     X,
     XTransp,
-    Γ::VertexType,
+    Gamma::VertexType,
     getProp!::Function,
     Par,
     Buffer,
@@ -187,7 +187,7 @@ end
     ResultBubble,
     X,
     XTransp,
-    Γ,
+    Gamma,
     getProp!,
     addBLTilde!,
     addBL!,
@@ -199,7 +199,7 @@ end
     ResultBubble::BubbleType,
     X,
     XTransp,
-    Γ::VertexType,
+    Gamma::VertexType,
     getProp!::Function,
     Par,
     Buffer,
@@ -207,7 +207,7 @@ end
     ResultBubble,
     X,
     XTransp,
-    Γ,
+    Gamma,
     getProp!,
     addBRTilde!,
     addBR!,

@@ -1,4 +1,4 @@
-"""Exectutes nontrivial symmetry in flow equations for Heisenberg dimer. Local and nonlocal b vertex are equal: Γb_11 = Γb_12!"""
+"""Exectutes nontrivial symmetry in flow equations for Heisenberg dimer. Local and nonlocal b vertex are equal: Gammab_11 = Gammab_12!"""
 function test_runFRG(Method = OneLoop(), System = getPolymer(2))
     Par = BenchmarkingParams(Method, System)
     test_runFRG(Par)
@@ -14,31 +14,33 @@ function test_runFRG(Par::PMFRG.PMFRGParams; kwargs...)
 
     println("cleaning up... deleting ", mainFile, " and ", CheckPoints)
     rm(tempFolder, recursive = true)
-    γ = SolP.u[end].x[2]
-    Γa = SolP.u[end].x[3]
-    Γb = SolP.u[end].x[4]
-    Γc = SolP.u[end].x[5]
-    return γ, Γa, Γb, Γc, ObsPt.saveval[end], ObsPt.t, Par
+    iSigma = SolP.u[end].x[2]
+    Gammaa = SolP.u[end].x[3]
+    Gammab = SolP.u[end].x[4]
+    Gammac = SolP.u[end].x[5]
+    return iSigma, Gammaa, Gammab, Gammac, ObsPt.saveval[end], ObsPt.t, Par
 end
 
 
 function test_DimerFRG(Method = OneLoop(); Obsacc = 1e-14, kwargs...)
-    γ, Γa, Γb, Γc, Obs, t, Par = test_runFRG(Method, getPolymer(2))
-    test_FRGResults(γ, Γa, Γb, Γc, Obs, t, Par; Obsacc = Obsacc, kwargs...)
+    iSigma, Gammaa, Gammab, Gammac, Obs, t, Par = test_runFRG(Method, getPolymer(2))
+    test_FRGResults(iSigma, Gammaa, Gammab, Gammac, Obs, t, Par; Obsacc = Obsacc, kwargs...)
 
-    println("Testing whether local and nonlocal b vertex are equal on dimer Γb_11 = Γb_12")
-    test_Gammab_Dimer(Γb; kwargs...)
+    println(
+        "Testing whether local and nonlocal b vertex are equal on dimer Gammab_11 = Gammab_12",
+    )
+    test_Gammab_Dimer(Gammab; kwargs...)
 
 end
 
 function test_SquagomeFRG(Method = OneLoop(); Obsacc = 1e-14, kwargs...)
     SysFunc = SquareKagome.getMirrorSquareKagome
-    γ, Γa, Γb, Γc, Obs, t, Par = test_runFRG(Method, SysFunc(4, 1, 0.2))
+    iSigma, Gammaa, Gammab, Gammac, Obs, t, Par = test_runFRG(Method, SysFunc(4, 1, 0.2))
     test_FRGResults(
-        γ,
-        Γa,
-        Γb,
-        Γc,
+        iSigma,
+        Gammaa,
+        Gammab,
+        Gammac,
         Obs,
         t,
         Par,
@@ -50,10 +52,10 @@ function test_SquagomeFRG(Method = OneLoop(); Obsacc = 1e-14, kwargs...)
 end
 
 function test_FRGResults(
-    γ,
-    Γa,
-    Γb,
-    Γc,
+    iSigma,
+    Gammaa,
+    Gammab,
+    Gammac,
     Obs,
     t,
     Par,
@@ -65,14 +67,14 @@ function test_FRGResults(
         @test t[end] ≈ Par.NumericalParams.Lam_min
     end
 
-    test_nonzero(γ, Γa, Γb, Γc, Par.System.couplings)
+    test_nonzero(iSigma, Gammaa, Gammab, Gammac, Par.System.couplings)
 
     @testset verbose = true "Testing frequency symmetries" begin
-        println("Testing onsite Γa_ii vertex")
-        test_Gammaa_onsite(Γa; kwargs...)
+        println("Testing onsite Gammaa_ii vertex")
+        test_Gammaa_onsite(Gammaa; kwargs...)
 
         println("Testing t ↔ u symmetries")
-        test_tu_symmetries(Γa, Γb, Γc; kwargs...)
+        test_tu_symmetries(Gammaa, Gammab, Gammac; kwargs...)
     end
 
     test_Observables(Method, Obs, Obsacc = Obsacc)
@@ -98,14 +100,14 @@ end
 
 function test_DimerParquet(; kwargs...)
     Sol, Obs, Par = test_runDimerParquet()
-    Γa, Γb, Γc = Sol.State.Γ.a, Sol.State.Γ.b, Sol.State.Γ.c
+    Gammaa, Gammab, Gammac = Sol.State.Gamma.a, Sol.State.Gamma.b, Sol.State.Gamma.c
     test_BareBubbles(Sol; kwargs...)
     test_BubbleSymmetries(Sol; kwargs...)
     test_FRGResults(
-        Sol.State.γ,
-        Γa,
-        Γb,
-        Γc,
+        Sol.State.iSigma,
+        Gammaa,
+        Gammab,
+        Gammac,
         Obs,
         Par.NumericalParams.Lam_min,
         Par;
@@ -128,18 +130,18 @@ function test_Observables(Method, Obs; Obsacc = 1e-14)
         test(:Chi)
     end
 
-    @testset "Testing γ" begin
-        test(:gamma)
+    @testset "Testing iSigma" begin
+        test(:iSigma)
     end
 
-    @testset "Testing max(Γ)" begin
-        @testset "Γa" begin
+    @testset "Testing max(Gamma)" begin
+        @testset "Gammaa" begin
             test(:MaxVa)
         end
-        @testset "Γb" begin
+        @testset "Gammab" begin
             test(:MaxVb)
         end
-        @testset "Γc" begin
+        @testset "Gammac" begin
             test(:MaxVc)
         end
     end
@@ -148,34 +150,34 @@ end
 test_Observables(Method::Parquet, Obs; Obsacc = 1e-14) =
     println("Observables check not implemented for parquet")
 
-function test_nonzero(γ, Γa, Γb, Γc, couplings)
+function test_nonzero(iSigma, Gammaa, Gammab, Gammac, couplings)
     @testset "non-trivial Vertices" begin
-        @testset "γ" begin
-            @test maximum(abs, γ) > 0.0
+        @testset "iSigma" begin
+            @test maximum(abs, iSigma) > 0.0
         end
-        @testset "Γa" begin
-            @test maximum(abs, Γa) > 0.0
+        @testset "Gammaa" begin
+            @test maximum(abs, Gammaa) > 0.0
         end
-        @testset "Γb" begin
-            @test maximum(abs, Γb) > 0.0
+        @testset "Gammab" begin
+            @test maximum(abs, Gammab) > 0.0
         end
-        @testset "Γc" begin
-            @test maximum(abs, Γc) > maximum(abs, couplings)
+        @testset "Gammac" begin
+            @test maximum(abs, Gammac) > maximum(abs, couplings)
         end
     end
 end
 
 
-function test_tu_symmetries(Γa, Γb, Γc; kwargs...)
-    test_tu_symmetry_ab(Γa, "Γa"; kwargs...)
-    test_tu_symmetry_ab(Γb, "Γb"; kwargs...)
-    test_tu_symmetry_c(Γa, Γb, Γc; kwargs...)
+function test_tu_symmetries(Gammaa, Gammab, Gammac; kwargs...)
+    test_tu_symmetry_ab(Gammaa, "Gammaa"; kwargs...)
+    test_tu_symmetry_ab(Gammab, "Gammab"; kwargs...)
+    test_tu_symmetry_c(Gammaa, Gammab, Gammac; kwargs...)
 end
 
-function test_Gammab_Dimer(Γb::AbstractArray; tol = 1e-14)
-    vb1 = @view Γb[1, :, :, :]
-    vb2 = @view Γb[2, :, :, :]
-    @testset "Dimer: Γb_11 == Γb_12" begin
+function test_Gammab_Dimer(Gammab::AbstractArray; tol = 1e-14)
+    vb1 = @view Gammab[1, :, :, :]
+    vb2 = @view Gammab[2, :, :, :]
+    @testset "Dimer: Gammab_11 == Gammab_12" begin
         Failures = 0
         for i in eachindex(vb1, vb2)
             if !isapprox(vb1[i], vb2[i], atol = tol)
@@ -186,21 +188,29 @@ function test_Gammab_Dimer(Γb::AbstractArray; tol = 1e-14)
     end
 end
 
-function test_Gammaa_onsite(Γa::AbstractArray, OnsiteBonds = [1]; tol = 1e-14)
-    @testset "Γa_ii(stu) == -Γa_ii(uts)" begin
+function test_Gammaa_onsite(Gammaa::AbstractArray, OnsiteBonds = [1]; tol = 1e-14)
+    @testset "Gammaa_ii(stu) == -Gammaa_ii(uts)" begin
         Failures = 0
-        for Rij in OnsiteBonds, s in axes(Γa, 2), t in axes(Γa, 3), u in axes(Γa, 4)
-            if !isapprox(Γa[Rij, s, t, u], -Γa[Rij, u, t, s], atol = tol)
+        for Rij in OnsiteBonds,
+            s in axes(Gammaa, 2),
+            t in axes(Gammaa, 3),
+            u in axes(Gammaa, 4)
+
+            if !isapprox(Gammaa[Rij, s, t, u], -Gammaa[Rij, u, t, s], atol = tol)
                 Failures += 1
             end
         end
         @test Failures == 0
     end
 
-    @testset "Γa_ii(stu) == Γa_ii(tus)" begin
+    @testset "Gammaa_ii(stu) == Gammaa_ii(tus)" begin
         Failures = 0
-        for Rij in OnsiteBonds, s in axes(Γa, 2), t in axes(Γa, 3), u in axes(Γa, 4)
-            if !isapprox(Γa[Rij, s, t, u], +Γa[Rij, t, u, s], atol = tol)
+        for Rij in OnsiteBonds,
+            s in axes(Gammaa, 2),
+            t in axes(Gammaa, 3),
+            u in axes(Gammaa, 4)
+
+            if !isapprox(Gammaa[Rij, s, t, u], +Gammaa[Rij, t, u, s], atol = tol)
                 Failures += 1
             end
         end
@@ -208,12 +218,16 @@ function test_Gammaa_onsite(Γa::AbstractArray, OnsiteBonds = [1]; tol = 1e-14)
     end
 end
 
-function test_tu_symmetry_ab(Γ::AbstractArray, Name; tol = 1e-14)
+function test_tu_symmetry_ab(Gamma::AbstractArray, Name; tol = 1e-14)
 
     @testset "$(Name)_ij(stu) == -$(Name)_ij(sut)" begin
         Failures = 0
-        for Rij in axes(Γ, 1), s in axes(Γ, 2), t in axes(Γ, 3), u in axes(Γ, 4)
-            if !isapprox(Γ[Rij, s, t, u], -Γ[Rij, s, u, t], atol = tol)
+        for Rij in axes(Gamma, 1),
+            s in axes(Gamma, 2),
+            t in axes(Gamma, 3),
+            u in axes(Gamma, 4)
+
+            if !isapprox(Gamma[Rij, s, t, u], -Gamma[Rij, s, u, t], atol = tol)
                 Failures += 1
             end
         end
@@ -223,18 +237,22 @@ function test_tu_symmetry_ab(Γ::AbstractArray, Name; tol = 1e-14)
 end
 
 function test_tu_symmetry_c(
-    Γa::AbstractArray,
-    Γb::AbstractArray,
-    Γc::AbstractArray,
-    V = "Γ";
+    Gammaa::AbstractArray,
+    Gammab::AbstractArray,
+    Gammac::AbstractArray,
+    V = "Gamma";
     tol = 1e-14,
 )
     Failures = 0
     @testset "$(V)c_ij(stu) == (-$(V)a_ij + $(V)b_ij + $(V)c_ij)(sut)" begin
-        for Rij in axes(Γc, 1), s in axes(Γc, 2), t in axes(Γc, 3), u in axes(Γc, 4)
+        for Rij in axes(Gammac, 1),
+            s in axes(Gammac, 2),
+            t in axes(Gammac, 3),
+            u in axes(Gammac, 4)
+
             if !isapprox(
-                Γc[Rij, s, t, u],
-                (-Γa[Rij, s, u, t] + Γb[Rij, s, u, t] + Γc[Rij, s, u, t]),
+                Gammac[Rij, s, t, u],
+                (-Gammaa[Rij, s, u, t] + Gammab[Rij, s, u, t] + Gammac[Rij, s, u, t]),
                 atol = tol,
             )
                 Failures += 1

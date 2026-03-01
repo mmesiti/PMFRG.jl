@@ -7,7 +7,7 @@ joinGroup(args...) = join(args, "/")
 """Saves Vertices to a compressed HDF5 file in a Group "Lam"."""
 function saveState(Filename::String, State::ArrayPartition, Lam, mode = "cw")
     Vertices = State.x
-    Names = "fint", "gamma", "Va", "Vb", "Vc"
+    Names = "fint", "iSigma", "Va", "Vb", "Vc"
     # Filename = string(DirName,"/$(string(round(Lam,digits =3))).h5")
     try
         h5open(Filename, mode) do f
@@ -23,7 +23,7 @@ end
 
 """Reads Vertices from file"""
 function readState(Filename::String)
-    Names = "fint", "gamma", "Va", "Vb", "Vc"
+    Names = "fint", "iSigma", "Va", "Vb", "Vc"
     State = ArrayPartition((h5read(Filename, "$N") for N in Names)...)
     return State
 end
@@ -63,7 +63,7 @@ function readGeometry(Filename::String, GeometryGenerator::Function; Group = "Ge
 end
 
 EssentialParamFields() =
-    (:T, :N, :Ngamma, :accuracy, :Lam_min, :Lam_max, :ex_freq, :lenIntw, :lenIntw_acc)
+    (:T, :N, :NiSigma, :accuracy, :Lam_min, :Lam_max, :ex_freq, :lenIntw, :lenIntw_acc)
 
 """Saves important information about computation parameters so that they can be reconstructed"""
 function saveNumericalParams(Filename, Par::PMFRGParams, Group = "")
@@ -255,7 +255,7 @@ generateMainFile(Par::PMFRGParams, arg::String = ""; kwargs...) =
     generateMainFile(".", Par, arg; kwargs...)
 
 function ParamsCompatible(Par1, Par2)
-    Fields = (:Npairs, :N, :Ngamma, :Lam_max, :System)
+    Fields = (:Npairs, :N, :NiSigma, :Lam_max, :System)
     for f in Fields
         @assert getproperty(Par1, f) == getproperty(Par2, f) "$f not compatible with parameters used in Checkpoint"
     end
